@@ -53,11 +53,11 @@ namespace
 
 		PxScene* scene;
 		PxGetPhysics().getScenes(&scene, 1);
-		PxU32 nbActors = scene->getNbActors(PxActorTypeSelectionFlag::eRIGID_DYNAMIC | PxActorTypeSelectionFlag::eRIGID_STATIC);
+		PxU32 nbActors = scene->getNbActors(PxActorTypeFlag::eRIGID_DYNAMIC | PxActorTypeFlag::eRIGID_STATIC);
 		if (nbActors)
 		{
 			std::vector<PxRigidActor*> actors(nbActors);
-			scene->getActors(PxActorTypeSelectionFlag::eRIGID_DYNAMIC | PxActorTypeSelectionFlag::eRIGID_STATIC, (PxActor**)&actors[0], nbActors);
+			scene->getActors(PxActorTypeFlag::eRIGID_DYNAMIC | PxActorTypeFlag::eRIGID_STATIC, (PxActor**)&actors[0], nbActors);
 			ArmadilloProject::renderActors(&actors[0], (PxU32)actors.size(), true);
 		}
 

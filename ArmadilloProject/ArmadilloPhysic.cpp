@@ -25,8 +25,7 @@ PxScene*				gScene = NULL;
 
 PxMaterial*				gMaterial = NULL;
 
-PxVisualDebuggerConnection*
-gConnection = NULL;
+PxPvd*                  gPvd = NULL;
 
 PxReal stackZ = 10.0f;
 
@@ -59,16 +58,12 @@ void createStack(const PxTransform& t, PxU32 size, PxReal halfExtent)
 void initPhysics(bool interactive)
 {
 	gFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, gAllocator, gErrorCallback);
-	PxProfileZoneManager* profileZoneManager = &PxProfileZoneManager::createProfileZoneManager(gFoundation);
-	gPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *gFoundation, PxTolerancesScale(), true, profileZoneManager);
-
-	if (gPhysics->getPvdConnectionManager())
-	{
-		gPhysics->getVisualDebugger()->setVisualizeConstraints(true);
-		gPhysics->getVisualDebugger()->setVisualDebuggerFlag(PxVisualDebuggerFlag::eTRANSMIT_CONTACTS, true);
-		gPhysics->getVisualDebugger()->setVisualDebuggerFlag(PxVisualDebuggerFlag::eTRANSMIT_SCENEQUERIES, true);
-		gConnection = PxVisualDebuggerExt::createConnection(gPhysics->getPvdConnectionManager(), PVD_HOST, 5425, 10);
-	}
+	
+	gPvd = PxCreatePvd(*gFoundation);	
+	PxPvdTransport* transport = PxDefaultPvdSocketTransportCreate(PVD_HOST, 5425, 10);
+	gPvd->connect(*transport, PxPvdInstrumentationFlag::eALL);
+	
+	gPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *gFoundation, PxTolerancesScale(), true, gPvd);
 
 	PxSceneDesc sceneDesc(gPhysics->getTolerancesScale());
 	sceneDesc.gravity = PxVec3(0.0f, -9.81f, 0.0f);
@@ -101,11 +96,11 @@ void cleanupPhysics(bool interactive)
 	PX_UNUSED(interactive);
 	gScene->release();
 	gDispatcher->release();
-	PxProfileZoneManager* profileZoneManager = gPhysics->getProfileZoneManager();
-	if (gConnection != NULL)
-		gConnection->release();
 	gPhysics->release();
-	profileZoneManager->release();
+	PxPvdTransport* transport = gPvd->getTransport();
+	gPvd->release();
+	transport->release();
+
 	gFoundation->release();
 
 	printf("ArmadilloProject done.\n");

@@ -1,5 +1,5 @@
 #include "Renderer.h"
-#define _HAS_EXCEPTIONS 0
+#include "Camera.h"
 
 using namespace physx;
 
@@ -187,7 +187,11 @@ void renderGeometry(const PxGeometryHolder& h)
 		glDisableClientState(GL_NORMAL_ARRAY);
 		glPopMatrix();
 	}
-	break;
+	case PxGeometryType::eINVALID:
+	case PxGeometryType::eHEIGHTFIELD:
+	case PxGeometryType::eGEOMETRY_COUNT:
+	case PxGeometryType::ePLANE:
+		break;
 	default:
 		break;
 	}
@@ -243,18 +247,18 @@ namespace ArmadilloProject
 	}
 
 
-	void startRender(const PxVec3& cameraEye, const PxVec3& cameraDir)
+	void startRender(const PxVec3& cameraEye, const PxVec3& cameraDir, PxReal clipNear, PxReal clipFar)
 	{
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// Setup camera
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
-		gluPerspective(60.0f, (float)glutGet(GLUT_WINDOW_WIDTH) / (float)glutGet(GLUT_WINDOW_HEIGHT), 1.0f, 10000.0f);
+		gluPerspective(60.0, GLdouble(glutGet(GLUT_WINDOW_WIDTH)) / GLdouble(glutGet(GLUT_WINDOW_HEIGHT)), GLdouble(clipNear), GLdouble(clipFar));
 
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
-		gluLookAt(cameraEye.x, cameraEye.y, cameraEye.z, cameraEye.x + cameraDir.x, cameraEye.y + cameraDir.y, cameraEye.z + cameraDir.z, 0.0f, 1.0f, 0.0f);
+		gluLookAt(GLdouble(cameraEye.x), GLdouble(cameraEye.y), GLdouble(cameraEye.z), GLdouble(cameraEye.x + cameraDir.x), GLdouble(cameraEye.y + cameraDir.y), GLdouble(cameraEye.z + cameraDir.z), 0.0, 1.0, 0.0);
 
 		glColor4f(0.4f, 0.4f, 0.4f, 1.0f);
 	}
@@ -267,7 +271,7 @@ namespace ArmadilloProject
 			const PxU32 nbShapes = actors[i]->getNbShapes();
 			PX_ASSERT(nbShapes <= MAX_NUM_ACTOR_SHAPES);
 			actors[i]->getShapes(shapes, nbShapes);
-			bool sleeping = actors[i]->isRigidDynamic() ? actors[i]->isRigidDynamic()->isSleeping() : false;
+			bool sleeping = actors[i]->is<PxRigidDynamic>() ? actors[i]->is<PxRigidDynamic>()->isSleeping() : false;
 
 			for (PxU32 j = 0; j<nbShapes; j++)
 			{
@@ -279,7 +283,7 @@ namespace ArmadilloProject
 
 				// render object
 				glPushMatrix();
-				glMultMatrixf((float*)&shapePose);
+				glMultMatrixf(reinterpret_cast<const float*>(&shapePose));
 				if (sleeping)
 				{
 					PxVec3 darkColor = color * 0.25f;
@@ -298,7 +302,7 @@ namespace ArmadilloProject
 					const PxReal shadowMat[] = { 1,0,0,0, -shadowDir.x / shadowDir.y,0,-shadowDir.z / shadowDir.y,0, 0,0,1,0, 0,0,0,1 };
 					glPushMatrix();
 					glMultMatrixf(shadowMat);
-					glMultMatrixf((float*)&shapePose);
+					glMultMatrixf(reinterpret_cast<const float*>(&shapePose));
 					glDisable(GL_LIGHTING);
 					glColor4f(0.1f, 0.2f, 0.3f, 1.0f);
 					renderGeometry(h);
@@ -309,10 +313,11 @@ namespace ArmadilloProject
 		}
 	}
 
+
 	void finishRender()
 	{
 		glutSwapBuffers();
 	}
 
 
-} //namespace HelloWorld
+} //namespace ArmadilloProject
