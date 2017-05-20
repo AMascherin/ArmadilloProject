@@ -14,6 +14,8 @@
 
 using namespace physx;
 
+//Dichiarazione oggetti utilizzati nella scena Physx come var.globali
+
 PxDefaultAllocator		gAllocator;
 PxDefaultErrorCallback	gErrorCallback;
 
@@ -40,6 +42,7 @@ PxRigidDynamic* createDynamic(const PxTransform& t, const PxGeometry& geometry, 
 
 void createStack(const PxTransform& t, PxU32 size, PxReal halfExtent)
 {
+	//Crea uno stack di cubi piramidale
 	PxShape* shape = gPhysics->createShape(PxBoxGeometry(halfExtent, halfExtent, halfExtent), *gMaterial);
 	for (PxU32 i = 0; i<size; i++)
 	{
@@ -57,21 +60,27 @@ void createStack(const PxTransform& t, PxU32 size, PxReal halfExtent)
 
 void initPhysics(bool interactive)
 {
-	gFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, gAllocator, gErrorCallback);
-	
+	gFoundation = PxCreateFoundation(PX_FOUNDATION_VERSION, gAllocator, gErrorCallback); //Creazione di una PxFoundation
+
+	//Impostazione Visual Debugger
 	gPvd = PxCreatePvd(*gFoundation);	
 	PxPvdTransport* transport = PxDefaultPvdSocketTransportCreate(PVD_HOST, 5425, 10);
 	gPvd->connect(*transport, PxPvdInstrumentationFlag::eALL);
 	
-	gPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *gFoundation, PxTolerancesScale(), true, gPvd);
+	//Inizializzazione fisica del mondo. Nota: può esserci solo una chiamata a PxCreatePhyiscs per processo attivo!
+	gPhysics = PxCreatePhysics(PX_PHYSICS_VERSION, *gFoundation, PxTolerancesScale(), true, gPvd); 
 
 	PxSceneDesc sceneDesc(gPhysics->getTolerancesScale());
-	sceneDesc.gravity = PxVec3(0.0f, -9.81f, 0.0f);
+	sceneDesc.gravity = PxVec3(0.0f, -9.81f, 0.0f); //Impostazione forza di gravità 
+	//Impostazioni per l'utilizzo di CPU e Filter Shader
 	gDispatcher = PxDefaultCpuDispatcherCreate(2);
 	sceneDesc.cpuDispatcher = gDispatcher;
 	sceneDesc.filterShader = PxDefaultSimulationFilterShader;
+
+	//Creazione Scena
 	gScene = gPhysics->createScene(sceneDesc);
 
+	//Creazione di un materiale (inteso in senso fisico, non dal punto di vista del render)
 	gMaterial = gPhysics->createMaterial(0.5f, 0.5f, 0.6f);
 
 	PxRigidStatic* groundPlane = PxCreatePlane(*gPhysics, PxPlane(0, 1, 0, 0), *gMaterial);
@@ -108,6 +117,8 @@ void cleanupPhysics(bool interactive)
 
 void keyPress(const char key, const PxTransform& camera)
 {
+	//Gestione dell'input
+	//TODO: Realizzare una classe/libreria separata per la gestione della tastiera?
 	switch (toupper(key))
 	{
 	case 'B':	createStack(PxTransform(PxVec3(0, 0, stackZ -= 10.0f)), 10, 2.0f);						break;
