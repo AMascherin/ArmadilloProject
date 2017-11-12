@@ -69,78 +69,103 @@ SampleHelloWorld::~SampleHelloWorld()
 
 void SampleHelloWorld::onTickPreRender(float dtime)
 {
-	// Start rendering mesh 1
-	PxTransform pos = PxTransform(PxVec3(10, 0, 10));
-	RenderBaseActor* renderMesh = createRenderMeshFromRawMesh(data);
 
-	// Non dovrebbe essere necessaria, ho preso tutto da onTick su chuckLoader
-	try_data->userData = renderMesh;
-	{
-		PxSceneReadLock scopedLock(getActiveScene());
+	if (dataShape.size()!=dataPos.size())
+		fatalError("Shape e posizioni relative non coincidono. Controllare la presenza di tutte le shape e/o le posizioni");
 
-		renderMesh->setPhysicsShape(try_data, try_data->getActor());
-		renderMesh->setEnableCameraCull(true);
+	for (int i = 0; i < (int)dataShape.size(); i++) {
+		dataShape[i]->userData = dataRender[i];
+		{
+			PxSceneReadLock scopedLock(getActiveScene());
 
-		PxTriangleMeshGeometry geometry;
-		try_data->getTriangleMeshGeometry(geometry);
-		renderMesh->setMeshScale(geometry.scale);
+			dataRender[i]->setPhysicsShape(dataShape[i], dataShape[i]->getActor());
+			dataRender[i]->setEnableCameraCull(true);
+
+			PxTriangleMeshGeometry geometry;
+			dataShape[i]->getTriangleMeshGeometry(geometry);
+			dataRender[i]->setMeshScale(geometry.scale);
+		}
+	
 	}
 
-	// Start rendering mesh 2 -> NUOVO Rendering fatto buildTest
-	//PxTransform pos1 = PxTransform(PxVec3(0, 1, 0));
-	//renderMesh1 = createRenderMeshFromRawMesh(data1);
+	//CODICE VECCHIO
+	//Creazione RenderActor per gli oggetti statici
+	//RenderBaseActor* renderMesh = createRenderMeshFromRawMesh(data);
+
+	//// Start rendering mesh 1
+	//PxTransform pos = PxTransform(PxVec3(10, 0, 10));
+	//RenderBaseActor* renderMesh = createRenderMeshFromRawMesh(data);
 
 	//// Non dovrebbe essere necessaria, ho preso tutto da onTick su chuckLoader
-	try_data1->userData = renderMesh1;
-	{
-		PxSceneReadLock scopedLock(getActiveScene());
+	//try_data->userData = renderMesh;  //Collegamento di una Physx Shape a una render Mesh
+	//{
+	//	PxSceneReadLock scopedLock(getActiveScene());
 
-		renderMesh1->setPhysicsShape(try_data1, actordyn);
-		renderMesh1->setEnableCameraCull(true);
+	//	renderMesh->setPhysicsShape(try_data, try_data->getActor());
+	//	renderMesh->setEnableCameraCull(true);
 
-		PxTriangleMeshGeometry geometry1;
+	//	PxTriangleMeshGeometry geometry;
+	//	try_data->getTriangleMeshGeometry(geometry);
+	//	renderMesh->setMeshScale(geometry.scale);
+	//}
 
-		try_data1->getTriangleMeshGeometry(geometry1);
-		renderMesh1->setMeshScale(provageo.scale);
-    }
+	//// Start rendering mesh 2 -> NUOVO Rendering fatto buildTest
+	////PxTransform pos1 = PxTransform(PxVec3(0, 1, 0));
+	////renderMesh1 = createRenderMeshFromRawMesh(data1);
+
+	////// Non dovrebbe essere necessaria, ho preso tutto da onTick su chuckLoader
+	//try_data1->userData = renderMesh1;
+	//{
+	//	PxSceneReadLock scopedLock(getActiveScene());
+
+	//	renderMesh1->setPhysicsShape(try_data1, try_data1->getActor());
+	//	renderMesh1->setEnableCameraCull(true);
+
+	//	PxTriangleMeshGeometry geometry1;
+
+	//	try_data1->getTriangleMeshGeometry(geometry1);
+	//	//renderMesh1->setMeshScale(provageo.scale);
+ //   }
     
     PhysXSample::onTickPreRender(dtime);
 }
 
 void SampleHelloWorld::onTickPostRender(float dtime)
 {
+	//CODICE VECCHIO, disabilitato per maggior fluidità
     //mScene->lockWrite();
 
-    // Start rendering mesh 1
-    PxTransform pos = PxTransform(PxVec3(10, 0, 10));
-    RenderBaseActor* renderMesh = createRenderMeshFromRawMesh(data);
+  //  // Start rendering mesh 1
+  //  PxTransform pos = PxTransform(PxVec3(10, 0, 10));
+  //  RenderBaseActor* renderMesh = createRenderMeshFromRawMesh(data);
 
-    // Non dovrebbe essere necessaria, ho preso tutto da onTick su chuckLoader
-    try_data->userData = renderMesh;
-    {
-        PxSceneReadLock scopedLock(getActiveScene());
+  //  // Non dovrebbe essere necessaria, ho preso tutto da onTick su chuckLoader
+  //  try_data->userData = renderMesh;
+  //  {
+  //      PxSceneReadLock scopedLock(getActiveScene());
 
-        renderMesh->setPhysicsShape(try_data, try_data->getActor());
-        renderMesh->setEnableCameraCull(true);
+  //      renderMesh->setPhysicsShape(try_data, try_data->getActor());
+  //      renderMesh->setEnableCameraCull(true);
 
-        PxTriangleMeshGeometry geometry;
-        //try_data->getTriangleMeshGeometry(geometry);
-        //renderMesh->setMeshScale(geometry.scale);
-    }
+  //      PxTriangleMeshGeometry geometry;
+  //      //try_data->getTriangleMeshGeometry(geometry);
+  //      //renderMesh->setMeshScale(geometry.scale);
+  //  }
 
-    // NUOVO Rendering fatto buildTest
-    try_data1->userData = renderMesh1;
-    {
-        PxSceneReadLock scopedLock(getActiveScene());
+  //  // NUOVO Rendering fatto buildTest
+  //  try_data1->userData = renderMesh1;
+  //  {
+  //      PxSceneReadLock scopedLock(getActiveScene());
 
-        renderMesh1->setPhysicsShape(try_data1, actordyn);
-        //renderMesh1->setEnableCameraCull(true);
+  //     // renderMesh1->setPhysicsShape(try_data1, actordyn);
+		//renderMesh1->setPhysicsShape(try_data1, try_data1->getActor());
+  //      //renderMesh1->setEnableCameraCull(true);
 
-        //PxTriangleMeshGeometry geometry1;
+  //      //PxTriangleMeshGeometry geometry1;
 
-        //try_data1->getTriangleMeshGeometry(geometry1);
-        //renderMesh1->setMeshScale(provageo.scale);
-    }
+  //      //try_data1->getTriangleMeshGeometry(geometry1);
+  //      //renderMesh1->setMeshScale(provageo.scale);
+  //  }
 	PhysXSample::onTickPostRender(dtime);
 }
 
@@ -196,7 +221,6 @@ RAWMesh* SampleHelloWorld::createRAWMeshFromObjMesh(const char* inObjFileName, c
 
 	return &outRawMesh;
 }
-
 
 // Copia/incolla funzione di generazione di mash triangolari da LargeWorld 
 PxTriangleMesh* SampleHelloWorld::generateTriMesh(PxU32 vertCount, PxU32 triCount, const PxVec3* vers, const PxU32* indices)
@@ -268,13 +292,14 @@ PxRigidDynamic* SampleHelloWorld::createDynamicActor
 //Metodo che crea le 2 mesh triangolari e salva i dati in maniera globale
 PxRigidStatic* SampleHelloWorld::buildTest()
 {
-
 	// Creazione mesh con relativa posizione iniziale
 	PxTransform pos = PxTransform(PxVec3(10, 0, 10));
-	createRAWMeshFromObjMesh("Monkey.obj", pos, 101, data);
+	createRAWMeshFromObjMesh("Monkey.obj", pos, 101, data);    
+	dataPos.push_back(pos);
 
 	PxTransform pos1 = PxTransform(PxVec3(0, 1, 0));
-	createRAWMeshFromObjMesh("Monkey.obj", pos1, 102, data1);
+	createRAWMeshFromObjMesh("Monkey.obj", pos1, 102, data1);  
+	dataPos.push_back(pos1);
 
 	// Creazione mesh triangolari a partire dalle RAWMesh ottenute precedentemente + controllo errori
 	PxTriangleMesh* triMesh = generateTriMesh(data.mNbVerts, data.mNbFaces, data.mVerts, data.mIndices);
@@ -291,19 +316,24 @@ PxRigidStatic* SampleHelloWorld::buildTest()
 	// Creazione shapes + controllo errori
 
 	PxTriangleMeshGeometry geom(triMesh);
-    
+	PxConvexMeshGeometry   geom1(conMesh);
+
     // Codice vecchio usava le triangle mesh, non supportate nella creazione/utilizzo di attori dinamici
     //PxTriangleMeshGeometry geom1(triMesh1);
-    PxConvexMeshGeometry geom1(conMesh);
-    //geomtry = geom;
-    //provageo = geom1;
-	actor = createRigidActor(getActiveScene(), getPhysics(), try_data, pos, geom, getDefaultMaterial());
 
-    actordyn = createDynamicActor(getActiveScene(), getPhysics(), try_data1, pos1, geom1, getDefaultMaterial());//static_cast<PxRigidDynamic*> (getPhysics().createRigidDynamic(pos1));
+	PxShape* try_data, *try_data1;
+	PxRigidActor* actor = createRigidActor(getActiveScene(), getPhysics(), try_data, pos, geom, getDefaultMaterial());
+	PxRigidDynamic* actordyn = createDynamicActor(getActiveScene(), getPhysics(), try_data1, pos1, geom1, getDefaultMaterial());
+	dataShape.push_back(try_data);
+	dataShape.push_back(try_data1);
 
-    // NUOVO: rendering fatto in buildTest invece che su onTickPre/PostRendering
-    renderMesh1 = createRenderMeshFromRawMesh(data1);
+    // rendering fatto in buildTest invece che su onTickPre/PostRendering
+	//NUOVO: Spostate le creazioni dei RenderActor qui
 
+	RenderBaseActor* renderMesh = createRenderMeshFromRawMesh(data);
+	RenderBaseActor* renderMesh1 = createRenderMeshFromRawMesh(data1);
+	dataRender.push_back(renderMesh);
+	dataRender.push_back(renderMesh1);
 	// SERVE SEMPRE - LASCIO PER FUTURI USI
 	//createRenderMeshFromRawMesh(data);
 	/*RenderBaseActor* renderMesh = createRenderMeshFromRawMesh(data);
@@ -329,7 +359,6 @@ PxRigidStatic* SampleHelloWorld::buildTest()
     //// Non dovrebbe essere necessaria, ho preso tutto da onTick su chuckLoader
   
 	//createRenderObjectFromShape(iglooActor, iglooShape, roadGravelMaterial);
-
 	//mPhysicsActors.push_back(iglooActor);
 
 	return NULL;

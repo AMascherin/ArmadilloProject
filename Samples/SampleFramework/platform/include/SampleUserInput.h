@@ -28,7 +28,8 @@
 #ifndef SAMPLE_USER_INPUT_H
 #define SAMPLE_USER_INPUT_H
 
-#include <foundation/PxSimpleTypes.h>
+//#include <foundation/PxSimpleTypes.h>
+#include "foundation/PxSimpleTypes.h"
 #include <vector>
 #include "PsString.h"
 

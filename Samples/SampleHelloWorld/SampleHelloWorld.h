@@ -63,12 +63,19 @@
 		RenderMaterial*                 tryMaterial, *tryMaterial1;
 
 		RAWMesh data, data1;
-		PxShape* try_data, *try_data1;
-		PxRigidActor* actor, *actor1;
-		PxRigidDynamic *actordyn;
-        PxTriangleMeshGeometry geomtry, geomtry1;
-        PxConvexMeshGeometry provageo;
-        RenderBaseActor* renderMesh1;
+
+
+		std::vector<PxShape*> dataShape;
+		std::vector<PxTransform> dataPos; 
+		std::vector<RenderBaseActor*> dataRender;
+
+		//Strutture dati rimosse perché inutili o perchè sintetizzate nei vari vector
+		//PxShape* try_data, *try_data1;
+		//PxRigidActor* actor;
+		//PxRigidDynamic *actordyn;
+       //PxTriangleMeshGeometry geomtry, geomtry1;
+       //PxConvexMeshGeometry provageo;
+       // RenderBaseActor* renderMesh1;
 	};
 
 #endif
