@@ -132,40 +132,6 @@ void SampleHelloWorld::onTickPreRender(float dtime)
 
 void SampleHelloWorld::onTickPostRender(float dtime)
 {
-	//CODICE VECCHIO, disabilitato per maggior fluidità
-    //mScene->lockWrite();
-
-  //  // Start rendering mesh 1
-  //  PxTransform pos = PxTransform(PxVec3(10, 0, 10));
-  //  RenderBaseActor* renderMesh = createRenderMeshFromRawMesh(data);
-
-  //  // Non dovrebbe essere necessaria, ho preso tutto da onTick su chuckLoader
-  //  try_data->userData = renderMesh;
-  //  {
-  //      PxSceneReadLock scopedLock(getActiveScene());
-
-  //      renderMesh->setPhysicsShape(try_data, try_data->getActor());
-  //      renderMesh->setEnableCameraCull(true);
-
-  //      PxTriangleMeshGeometry geometry;
-  //      //try_data->getTriangleMeshGeometry(geometry);
-  //      //renderMesh->setMeshScale(geometry.scale);
-  //  }
-
-  //  // NUOVO Rendering fatto buildTest
-  //  try_data1->userData = renderMesh1;
-  //  {
-  //      PxSceneReadLock scopedLock(getActiveScene());
-
-  //     // renderMesh1->setPhysicsShape(try_data1, actordyn);
-		//renderMesh1->setPhysicsShape(try_data1, try_data1->getActor());
-  //      //renderMesh1->setEnableCameraCull(true);
-
-  //      //PxTriangleMeshGeometry geometry1;
-
-  //      //try_data1->getTriangleMeshGeometry(geometry1);
-  //      //renderMesh1->setMeshScale(provageo.scale);
-  //  }
 	PhysXSample::onTickPostRender(dtime);
 }
 
@@ -289,27 +255,48 @@ PxRigidDynamic* SampleHelloWorld::createDynamicActor
 	return dyn;
 }
 
+//Codice preso da SnippetJoint. Le flag per gli assi sono state modificate opportunamente
+PxJoint* createDampedD6(PxRigidActor* a0, const PxTransform& t0, PxRigidActor* a1, const PxTransform& t1) 
+//t0 = posizione di partenza del join
+//t1 = punto/asse/piano di rotazione, relativo alla posizione dell'oggetto 
+//(ad esempio t1=(0,0,0) corrisponde all'origine dell'oggetto stesso, non della scena)
+{
+	PxD6Joint* j = PxD6JointCreate(PxGetPhysics(), a0, t0, a1, t1);
+	j->setMotion(PxD6Axis::eSWING1, PxD6Motion::eFREE);		// y axis constraint
+	j->setMotion(PxD6Axis::eSWING2, PxD6Motion::eLOCKED);	// z axis constraint
+	j->setMotion(PxD6Axis::eTWIST, PxD6Motion::eLOCKED);    // x axis constraint
+	j->setDrive(PxD6Drive::eSLERP, PxD6JointDrive(0, 1000, FLT_MAX, true));
+	return j;
+}
+
 //Metodo che crea le 2 mesh triangolari e salva i dati in maniera globale
 PxRigidStatic* SampleHelloWorld::buildTest()
 {
 	// Creazione mesh con relativa posizione iniziale
-	PxTransform pos = PxTransform(PxVec3(10, 0, 10));
+	PxTransform pos = PxTransform(PxVec3(0, 10, 0));
 	createRAWMeshFromObjMesh("Monkey.obj", pos, 101, data);    
 	dataPos.push_back(pos);
 
-	PxTransform pos1 = PxTransform(PxVec3(0, 1, 0));
+	PxTransform pos1 = PxTransform(PxVec3(20, 0, 20));
 	createRAWMeshFromObjMesh("Monkey.obj", pos1, 102, data1);  
 	dataPos.push_back(pos1);
+
+	PxTransform pos2 = PxTransform(PxVec3(0, 0, -10));
+	createRAWMeshFromObjMesh("JointTest2.obj", pos1, 103, data2);
+	dataPos.push_back(pos2);
 
 	// Creazione mesh triangolari a partire dalle RAWMesh ottenute precedentemente + controllo errori
 	PxTriangleMesh* triMesh = generateTriMesh(data.mNbVerts, data.mNbFaces, data.mVerts, data.mIndices);
 	if (!triMesh)
 		fatalError("creating the triangle mesh failed");
- 
-    // Codice vecchio usava le triangle mesh, non supportate nella creazione/utilizzo di attori dinamici
-    //PxTriangleMesh* triMesh1 = generateTriMesh(data1.mNbVerts, data1.mNbFaces, data1.mVerts, data1.mIndices);
+
+	//Gli attori dinamici non supportano le triangle mesh. E' necessario utilizzare le convexMesh
     PxConvexMesh *conMesh = PxToolkit::createConvexMesh(getPhysics(), getCooking(), data1.mVerts, data1.mNbVerts, PxConvexFlag::eCOMPUTE_CONVEX);
     if (!conMesh)
+		fatalError("creating the triangle mesh failed");
+
+	PxConvexMesh *conMesh2 = PxToolkit::createConvexMesh(getPhysics(), getCooking(), data2.mVerts, data2.mNbVerts, PxConvexFlag::eCOMPUTE_CONVEX);
+	if (!conMesh)
 		fatalError("creating the triangle mesh failed");
 
 	// Creazione attori nel punto dello spazio ricevuto in input + controllo errori
@@ -317,23 +304,37 @@ PxRigidStatic* SampleHelloWorld::buildTest()
 
 	PxTriangleMeshGeometry geom(triMesh);
 	PxConvexMeshGeometry   geom1(conMesh);
+	PxConvexMeshGeometry   geom2(conMesh2);
 
-    // Codice vecchio usava le triangle mesh, non supportate nella creazione/utilizzo di attori dinamici
-    //PxTriangleMeshGeometry geom1(triMesh1);
-
-	PxShape* try_data, *try_data1;
+	PxShape* try_data, *try_data1, *try_data2;
 	PxRigidActor* actor = createRigidActor(getActiveScene(), getPhysics(), try_data, pos, geom, getDefaultMaterial());
 	PxRigidDynamic* actordyn = createDynamicActor(getActiveScene(), getPhysics(), try_data1, pos1, geom1, getDefaultMaterial());
+
+	PxRigidDynamic* jointTest = createDynamicActor(getActiveScene(), getPhysics(), try_data2, pos2, geom2, getDefaultMaterial());
+	//Posizione rispetto al quale l'oggetto è vincolato a muoversi
+	//NOTA: La scimmia nera è posizionata sopra l'origine come riferimento
+	// PxTransform pos2 = PxTransform(PxVec3(0, 0, -10));
+	PxTransform jointpos = PxTransform(PxVec3(0, 0, 0)); 
+
+	//TEST JOINT:
+	//(*createDampedD6)(NULL, pos2, jointTest, jointpos); //-->in questo caso l'oggetto è posizionato nel punto pos2 e ruota attorno al proprio asse y
+	//(*createDampedD6)(NULL, pos2, jointTest, pos2);    //-->in questo caso l'oggetto è posizionato nell'origine e ruota attorno a pos2
+	//(*createDampedD6)(NULL, jointpos, jointTest, pos2);  //-->oggetto posizionato in pos2 e ruota attorno all'origine
+	// (*createDampedD6)(NULL, jointpos, jointTest, jointpos); //-->oggetto posizionato nell'origine e ruota attorno al proprio asse y
+
 	dataShape.push_back(try_data);
 	dataShape.push_back(try_data1);
+	dataShape.push_back(try_data2);
 
-    // rendering fatto in buildTest invece che su onTickPre/PostRendering
-	//NUOVO: Spostate le creazioni dei RenderActor qui
-
+	//Creazione delle RenderMesh
 	RenderBaseActor* renderMesh = createRenderMeshFromRawMesh(data);
-	RenderBaseActor* renderMesh1 = createRenderMeshFromRawMesh(data1);
 	dataRender.push_back(renderMesh);
+	RenderBaseActor* renderMesh1 = createRenderMeshFromRawMesh(data1);
 	dataRender.push_back(renderMesh1);
+	RenderBaseActor* renderMesh2 = createRenderMeshFromRawMesh(data2);
+	dataRender.push_back(renderMesh2);
+
+
 	// SERVE SEMPRE - LASCIO PER FUTURI USI
 	//createRenderMeshFromRawMesh(data);
 	/*RenderBaseActor* renderMesh = createRenderMeshFromRawMesh(data);
@@ -421,6 +422,13 @@ void SampleHelloWorld::onInit()
 
 	tryMaterial1 = SAMPLE_NEW(RenderMaterial)(*getRenderer(), PxVec3(1.0f, 1.0f, 1.0f), 1.0f, false, 102, tryTexture1);
 	mRenderMaterials.push_back(tryMaterial1);
+
+	RAWTexture Texturedata2;
+	Texturedata2.mName = "Wood_Tileable.jpg";
+	RenderTexture* tryTexture2 = createRenderTextureFromRawTexture(Texturedata2);
+
+	tryMaterial2 = SAMPLE_NEW(RenderMaterial)(*getRenderer(), PxVec3(1.0f, 1.0f, 1.0f), 1.0f, false, 103, tryTexture2);
+	mRenderMaterials.push_back(tryMaterial2);
 
 	// Creazione mesh
 	buildTest();

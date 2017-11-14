@@ -60,9 +60,9 @@
 		PxRigidStatic * buildTest();
 
 		// Dati di materiali e mesh salvati globalmente
-		RenderMaterial*                 tryMaterial, *tryMaterial1;
+		RenderMaterial*                 tryMaterial, *tryMaterial1, *tryMaterial2;
 
-		RAWMesh data, data1;
+		RAWMesh data, data1, data2;
 
 
 		std::vector<PxShape*> dataShape;
