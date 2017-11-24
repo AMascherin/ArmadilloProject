@@ -32,6 +32,9 @@
 #define SAMPLE_HELLO_WORLD_H
 
 #include "PhysXSample.h"
+#include "SampleCCTCameraController.h"
+#include "SampleCCTActor.h"
+#include "SampleCCTJump.h"
 
 	class SampleHelloWorld : public PhysXSample
 	{
@@ -45,12 +48,27 @@
 
 		virtual	void							newMesh(const RAWMesh&);
 		virtual	void							onInit();
+		virtual void                            onSubstep(float dtime);
+		void updateCharacter(float dtime);
         virtual	void						    onInit(bool restart) { onInit(); }
 
 		virtual void							collectInputEvents(std::vector<const SampleFramework::InputEvent*>& inputEvents);
 		virtual void							helpRender(PxU32 x, PxU32 y, PxU8 textAlpha);
 		virtual	void							descriptionRender(PxU32 x, PxU32 y, PxU8 textAlpha);
 		virtual PxU32							getDebugObjectTypes() const;
+
+		//Camera management
+		SampleCCTCameraController*		mCCTCamera;
+		ControlledActor*				mActor;
+		PxControllerManager*			mControllerManager;
+	//	PxExtendedVec3					mControllerInitialPosition;
+	//	PxCapsuleController*			mController;
+		PxVec3							mControllerInitialPosition;
+		bool                            mCCTActive;
+		PxVec3                          mCCTDisplacement;
+		PxVec3                          mCCTDisplacementPrevStep;
+		PxReal                          mCCTTimeStep;
+	//	SampleCharacterClothJump		mJump;
 
 		// Funzioni inserite per test import/rendering
 		RAWMesh * createRAWMeshFromObjMesh(const char * inObjFileName, const PxTransform & inPos, PxU32 inMaterialID, RAWMesh & outRawMesh);
@@ -69,13 +87,6 @@
 		std::vector<PxTransform> dataPos; 
 		std::vector<RenderBaseActor*> dataRender;
 
-		//Strutture dati rimosse perché inutili o perchè sintetizzate nei vari vector
-		//PxShape* try_data, *try_data1;
-		//PxRigidActor* actor;
-		//PxRigidDynamic *actordyn;
-       //PxTriangleMeshGeometry geomtry, geomtry1;
-       //PxConvexMeshGeometry provageo;
-       // RenderBaseActor* renderMesh1;
 	};
 
 #endif

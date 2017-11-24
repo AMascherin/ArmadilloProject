@@ -34,7 +34,7 @@
 #include "RenderBoxActor.h"
 #include "RenderCapsuleActor.h"
 #include "PhysXSample.h"
-
+#include "RenderMeshActor.h"
 using namespace physx;
 using namespace SampleRenderer;
 
@@ -122,6 +122,105 @@ void ControlledActor::sync()
 		mRenderActorStanding->setTransform(tr);
 	if(mRenderActorCrouching)
 		mRenderActorCrouching->setTransform(tr);
+}
+
+PxController* ControlledActor::init2(const ControlledActorDesc& desc, PxControllerManager* manager, RAWMesh data)
+{
+	const float radius = desc.mRadius;
+	float height = desc.mHeight;
+	float crouchHeight = desc.mCrouchHeight;
+
+	PxControllerDesc* cDesc;
+	PxBoxControllerDesc boxDesc;
+	PxCapsuleControllerDesc capsuleDesc;
+
+	if (desc.mType == PxControllerShapeType::eBOX)
+	{
+		height *= 0.5f;
+		height += radius;
+		crouchHeight *= 0.5f;
+		crouchHeight += radius;
+		boxDesc.halfHeight = height;
+		boxDesc.halfSideExtent = radius;
+		boxDesc.halfForwardExtent = radius;
+		cDesc = &boxDesc;
+	}
+	else
+	{
+		PX_ASSERT(desc.mType == PxControllerShapeType::eCAPSULE);
+		capsuleDesc.height = height;
+		capsuleDesc.radius = radius;
+		capsuleDesc.climbingMode = PxCapsuleClimbingMode::eCONSTRAINED;
+		cDesc = &capsuleDesc;
+	}
+
+	cDesc->density = desc.mProxyDensity;
+	cDesc->scaleCoeff = desc.mProxyScale;
+	cDesc->material = &mOwner.getDefaultMaterial();
+	cDesc->position = desc.mPosition;
+	cDesc->slopeLimit = desc.mSlopeLimit;
+	cDesc->contactOffset = desc.mContactOffset;
+	cDesc->stepOffset = desc.mStepOffset;
+	cDesc->invisibleWallHeight = desc.mInvisibleWallHeight;
+	cDesc->maxJumpHeight = desc.mMaxJumpHeight;
+	//	cDesc->nonWalkableMode		= PxControllerNonWalkableMode::ePREVENT_CLIMBING_AND_FORCE_SLIDING;
+	cDesc->reportCallback = desc.mReportCallback;
+	cDesc->behaviorCallback = desc.mBehaviorCallback;
+	cDesc->volumeGrowth = desc.mVolumeGrowth;
+
+	mType = desc.mType;
+	mInitialPosition = desc.mPosition;
+	mStandingSize = height;
+	mCrouchingSize = crouchHeight;
+	mControllerRadius = radius;
+
+	PxController* ctrl = static_cast<PxBoxController*>(manager->createController(*cDesc));
+	PX_ASSERT(ctrl);
+
+	// remove controller shape from scene query for standup overlap test
+	PxRigidDynamic* actor = ctrl->getActor();
+	if (actor)
+	{
+		if (actor->getNbShapes())
+		{
+			PxShape* ctrlShape;
+			actor->getShapes(&ctrlShape, 1);
+			ctrlShape->setFlag(PxShapeFlag::eSCENE_QUERY_SHAPE, false);
+
+			Renderer* renderer = mOwner.getRenderer();
+
+			if (desc.mType == PxControllerShapeType::eBOX)
+			{
+				const PxVec3 standingExtents(radius, height, radius);
+				const PxVec3 crouchingExtents(radius, crouchHeight, radius);
+
+				mRenderActorStanding = SAMPLE_NEW(RenderBoxActor)(*renderer, standingExtents);
+				mRenderActorCrouching = SAMPLE_NEW(RenderBoxActor)(*renderer, crouchingExtents);
+			}
+			else if (desc.mType == PxControllerShapeType::eCAPSULE)
+			{
+				
+				const PxU32 nbTris = data.mNbFaces;
+				const PxU32* src = data.mIndices;
+
+				PxU16* indices = (PxU16*)SAMPLE_ALLOC(sizeof(PxU16)*nbTris * 3);
+				for (PxU32 i = 0; i<nbTris; i++)
+				{
+					indices[i * 3 + 0] = src[i * 3 + 0];
+					indices[i * 3 + 1] = src[i * 3 + 2];
+					indices[i * 3 + 2] = src[i * 3 + 1];
+				}
+
+				mRenderActorStanding = SAMPLE_NEW(RenderMeshActor)(*renderer, data.mVerts, data.mNbVerts, data.mVertexNormals, data.mUVs, indices, NULL, nbTris);
+				//mRenderActorStanding->setRenderMaterial(101);
+				//SAMPLE_NEW(RenderCapsuleActor)(*renderer, radius, height*0.5f);<
+				mRenderActorCrouching = SAMPLE_NEW(RenderCapsuleActor)(*renderer, radius, crouchHeight*0.5f);
+			}
+		}
+	}
+
+	mController = ctrl;
+	return ctrl;
 }
 
 PxController* ControlledActor::init(const ControlledActorDesc& desc, PxControllerManager* manager)

@@ -65,6 +65,7 @@ struct PxControllerShapeType
 
 		@see PxCapsuleController PxCapsuleControllerDesc
 		*/
+		
 		eCAPSULE,
 
 		eFORCE_DWORD = 0x7fffffff

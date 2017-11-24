@@ -6,11 +6,11 @@ InputMapping
 		}
 	UserInputCS
 		{
-		7411389;
+		7411927;
 		}
 	InputEventCS
 		{
-		3540637;
+		3475096;
 		}
 	Map
 		{
@@ -26,16 +26,6 @@ InputMapping
 		{
 		SCAN_CODE_D;
 		CAMERA_MOVE_RIGHT;
-		}
-	Map
-		{
-		SCAN_CODE_E;
-		CAMERA_MOVE_UP;
-		}
-	Map
-		{
-		SCAN_CODE_C;
-		CAMERA_MOVE_DOWN;
 		}
 	Map
 		{
@@ -76,6 +66,46 @@ InputMapping
 		{
 		GAMEPAD_LEFT_STICK_Y;
 		CAMERA_GAMEPAD_MOVE_FORWARD_BACK;
+		}
+	Map
+		{
+		SCAN_CODE_SPACE;
+		CAMERA_JUMP;
+		}
+	Map
+		{
+		GAMEPAD_SOUTH;
+		CAMERA_JUMP;
+		}
+	Map
+		{
+		SCAN_CODE_C;
+		CAMERA_CROUCH;
+		}
+	Map
+		{
+		GAMEPAD_LEFT_STICK;
+		CAMERA_CROUCH;
+		}
+	Map
+		{
+		KEY_ADD;
+		CAMERA_CONTROLLER_INCREASE;
+		}
+	Map
+		{
+		GAMEPAD_RIGHT_SHOULDER_TOP;
+		CAMERA_CONTROLLER_INCREASE;
+		}
+	Map
+		{
+		KEY_SUBTRACT;
+		CAMERA_CONTROLLER_DECREASE;
+		}
+	Map
+		{
+		GAMEPAD_LEFT_SHOULDER_TOP;
+		CAMERA_CONTROLLER_DECREASE;
 		}
 	Map
 		{
@@ -236,11 +266,6 @@ InputMapping
 		{
 		KEY_F2;
 		TOGGLE_CPU_GPU;
-		}
-	Map
-		{
-		MOUSE_BUTTON_LEFT;
-		MOUSE_LOOK_BUTTON;
 		}
 	Map
 		{

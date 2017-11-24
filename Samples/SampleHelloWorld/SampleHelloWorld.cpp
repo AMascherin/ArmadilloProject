@@ -55,12 +55,24 @@ using namespace SampleRenderer;
 using namespace SampleFramework;
 
 REGISTER_SAMPLE(SampleHelloWorld, "SampleHelloWorld")
+////////////////////////////////////////////////////////////////////////////////
+#define CONTACT_OFFSET			0.01f
+#define STEP_OFFSET				0.05f
+#define SLOPE_LIMIT				0.0f
+#define INVISIBLE_WALLS_HEIGHT	0.0f
+#define MAX_JUMP_HEIGHT			0.0f
+
+static const float gScaleFactor = 1.5f;
+static const float gStandingSize = 0.5f * gScaleFactor;
+static const float gCrouchingSize = 0.25f * gScaleFactor;
+static const float gControllerRadius = 0.5f * gScaleFactor;
+
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SampleHelloWorld::SampleHelloWorld(PhysXSampleApplication& app) :
-	PhysXSample(app)
+SampleHelloWorld::SampleHelloWorld(PhysXSampleApplication& app) :	PhysXSample(app)
 {
+	mControllerInitialPosition = PxVec3(18.0f, 18.0f, 18.0f);
 }
 
 SampleHelloWorld::~SampleHelloWorld()
@@ -87,46 +99,7 @@ void SampleHelloWorld::onTickPreRender(float dtime)
 		}
 	
 	}
-
-	//CODICE VECCHIO
-	//Creazione RenderActor per gli oggetti statici
-	//RenderBaseActor* renderMesh = createRenderMeshFromRawMesh(data);
-
-	//// Start rendering mesh 1
-	//PxTransform pos = PxTransform(PxVec3(10, 0, 10));
-	//RenderBaseActor* renderMesh = createRenderMeshFromRawMesh(data);
-
-	//// Non dovrebbe essere necessaria, ho preso tutto da onTick su chuckLoader
-	//try_data->userData = renderMesh;  //Collegamento di una Physx Shape a una render Mesh
-	//{
-	//	PxSceneReadLock scopedLock(getActiveScene());
-
-	//	renderMesh->setPhysicsShape(try_data, try_data->getActor());
-	//	renderMesh->setEnableCameraCull(true);
-
-	//	PxTriangleMeshGeometry geometry;
-	//	try_data->getTriangleMeshGeometry(geometry);
-	//	renderMesh->setMeshScale(geometry.scale);
-	//}
-
-	//// Start rendering mesh 2 -> NUOVO Rendering fatto buildTest
-	////PxTransform pos1 = PxTransform(PxVec3(0, 1, 0));
-	////renderMesh1 = createRenderMeshFromRawMesh(data1);
-
-	////// Non dovrebbe essere necessaria, ho preso tutto da onTick su chuckLoader
-	//try_data1->userData = renderMesh1;
-	//{
-	//	PxSceneReadLock scopedLock(getActiveScene());
-
-	//	renderMesh1->setPhysicsShape(try_data1, try_data1->getActor());
-	//	renderMesh1->setEnableCameraCull(true);
-
-	//	PxTriangleMeshGeometry geometry1;
-
-	//	try_data1->getTriangleMeshGeometry(geometry1);
-	//	//renderMesh1->setMeshScale(provageo.scale);
- //   }
-    
+	mActor->sync();    
     PhysXSample::onTickPreRender(dtime);
 }
 
@@ -269,6 +242,8 @@ PxJoint* createDampedD6(PxRigidActor* a0, const PxTransform& t0, PxRigidActor* a
 	return j;
 }
 
+
+
 //Metodo che crea le 2 mesh triangolari e salva i dati in maniera globale
 PxRigidStatic* SampleHelloWorld::buildTest()
 {
@@ -277,7 +252,7 @@ PxRigidStatic* SampleHelloWorld::buildTest()
 	createRAWMeshFromObjMesh("Monkey.obj", pos, 101, data);    
 	dataPos.push_back(pos);
 
-	PxTransform pos1 = PxTransform(PxVec3(20, 0, 20));
+	PxTransform pos1 = PxTransform(PxVec3(0, 10, -10));
 	createRAWMeshFromObjMesh("Monkey.obj", pos1, 102, data1);  
 	dataPos.push_back(pos1);
 
@@ -308,18 +283,21 @@ PxRigidStatic* SampleHelloWorld::buildTest()
 
 	PxShape* try_data, *try_data1, *try_data2;
 	PxRigidActor* actor = createRigidActor(getActiveScene(), getPhysics(), try_data, pos, geom, getDefaultMaterial());
-	PxRigidDynamic* actordyn = createDynamicActor(getActiveScene(), getPhysics(), try_data1, pos1, geom1, getDefaultMaterial());
-
+	//PxRigidDynamic* actordyn = createDynamicActor(getActiveScene(), getPhysics(), try_data1, pos1, geom1, getDefaultMaterial());
+	PxRigidActor* actordyn = createRigidActor(getActiveScene(), getPhysics(), try_data1, pos1, geom1, getDefaultMaterial());
+	
 	PxRigidDynamic* jointTest = createDynamicActor(getActiveScene(), getPhysics(), try_data2, pos2, geom2, getDefaultMaterial());
+	//jointTest = createDynamicActor(getActiveScene(), getPhysics(), try_data2, pos2, geom2, getDefaultMaterial());
 	//Posizione rispetto al quale l'oggetto è vincolato a muoversi
 	//NOTA: La scimmia nera è posizionata sopra l'origine come riferimento
-	// PxTransform pos2 = PxTransform(PxVec3(0, 0, -10));
-	PxTransform jointpos = PxTransform(PxVec3(0, 0, 0)); 
 
+	// PxTransform pos2 = PxTransform(PxVec3(0, 0, -10));
+	PxTransform jointpos = PxTransform(PxVec3(0, 0, 2)); 
 	//TEST JOINT:
-	//(*createDampedD6)(NULL, pos2, jointTest, jointpos); //-->in questo caso l'oggetto è posizionato nel punto pos2 e ruota attorno al proprio asse y
+	(*createDampedD6)(NULL, pos2, jointTest, jointpos); //-->in questo caso l'oggetto è posizionato nel punto pos2 e ruota attorno al proprio asse y
 	//(*createDampedD6)(NULL, pos2, jointTest, pos2);    //-->in questo caso l'oggetto è posizionato nell'origine e ruota attorno a pos2
-	//(*createDampedD6)(NULL, jointpos, jointTest, pos2);  //-->oggetto posizionato in pos2 e ruota attorno all'origine
+	//(*createDampedD6)(NULL, jointpos, jointTest, PxTransform(PxVec3(0,0,10)));  //-->oggetto posizionato in pos2 e ruota attorno all'origine
+	//(*createDampedD6)(NULL, jointpos, jointTest, pos2);  //-->oggetto posizionato in -pos2 e ruota attorno all'origine
 	// (*createDampedD6)(NULL, jointpos, jointTest, jointpos); //-->oggetto posizionato nell'origine e ruota attorno al proprio asse y
 
 	dataShape.push_back(try_data);
@@ -332,36 +310,7 @@ PxRigidStatic* SampleHelloWorld::buildTest()
 	RenderBaseActor* renderMesh1 = createRenderMeshFromRawMesh(data1);
 	dataRender.push_back(renderMesh1);
 	RenderBaseActor* renderMesh2 = createRenderMeshFromRawMesh(data2);
-	dataRender.push_back(renderMesh2);
-
-
-	// SERVE SEMPRE - LASCIO PER FUTURI USI
-	//createRenderMeshFromRawMesh(data);
-	/*RenderBaseActor* renderMesh = createRenderMeshFromRawMesh(data);
-	iglooShape->userData = renderMesh;
-	{
-	PxSceneReadLock scopedLock(getActiveScene());
-
-	renderMesh->setPhysicsShape(iglooShape, iglooShape->getActor());
-	renderMesh->setEnableCameraCull(true);
-
-	PxTriangleMeshGeometry geometry;
-	iglooShape->getTriangleMeshGeometry(geometry);
-	renderMesh->setMeshScale(geometry.scale);
-	}*/
-	//setCCDActive(*iglooShape);
-
-	//createRenderObjectsFromActor(iglooActor, roadGravelMaterial);
-
-	//createRenderObjectFromShape(iglooActor, try_data, mSnowMaterial)
-    // Start rendering mesh 2
-    //PxTransform pos1 = PxTransform(PxVec3(0, 1, 0));
-
-    //// Non dovrebbe essere necessaria, ho preso tutto da onTick su chuckLoader
-  
-	//createRenderObjectFromShape(iglooActor, iglooShape, roadGravelMaterial);
-	//mPhysicsActors.push_back(iglooActor);
-
+	dataRender.push_back(renderMesh2);	
 	return NULL;
 }
 
@@ -409,35 +358,118 @@ void SampleHelloWorld::onInit()
     PxSceneWriteLock scopedLock(*mScene);
 
 	//Importo materiali/texture
-	RAWTexture Texturedata;
-	Texturedata.mName = "DiffuseMap.bmp";
-	RenderTexture* tryTexture = createRenderTextureFromRawTexture(Texturedata);
+	{
+		RAWTexture Texturedata;
+		Texturedata.mName = "DiffuseMap.bmp";
+		RenderTexture* tryTexture = createRenderTextureFromRawTexture(Texturedata);
 
-	tryMaterial = SAMPLE_NEW(RenderMaterial)(*getRenderer(), PxVec3(1.0f, 1.0f, 1.0f), 1.0f, false, 101, tryTexture);
-	mRenderMaterials.push_back(tryMaterial);
+		tryMaterial = SAMPLE_NEW(RenderMaterial)(*getRenderer(), PxVec3(1.0f, 1.0f, 1.0f), 1.0f, false, 101, tryTexture);
+		mRenderMaterials.push_back(tryMaterial);
 
-	RAWTexture Texturedata1;
-	Texturedata1.mName = "nvidia.bmp";
-	RenderTexture* tryTexture1 = createRenderTextureFromRawTexture(Texturedata1);
+		RAWTexture Texturedata1;
+		Texturedata1.mName = "nvidia.bmp";
+		RenderTexture* tryTexture1 = createRenderTextureFromRawTexture(Texturedata1);
 
-	tryMaterial1 = SAMPLE_NEW(RenderMaterial)(*getRenderer(), PxVec3(1.0f, 1.0f, 1.0f), 1.0f, false, 102, tryTexture1);
-	mRenderMaterials.push_back(tryMaterial1);
+		tryMaterial1 = SAMPLE_NEW(RenderMaterial)(*getRenderer(), PxVec3(1.0f, 1.0f, 1.0f), 1.0f, false, 102, tryTexture1);
+		mRenderMaterials.push_back(tryMaterial1);
 
-	RAWTexture Texturedata2;
-	Texturedata2.mName = "Wood_Tileable.jpg";
-	RenderTexture* tryTexture2 = createRenderTextureFromRawTexture(Texturedata2);
+		RAWTexture Texturedata2;
+		Texturedata2.mName = "Wood_Tileable.jpg";
+		RenderTexture* tryTexture2 = createRenderTextureFromRawTexture(Texturedata2);
 
-	tryMaterial2 = SAMPLE_NEW(RenderMaterial)(*getRenderer(), PxVec3(1.0f, 1.0f, 1.0f), 1.0f, false, 103, tryTexture2);
-	mRenderMaterials.push_back(tryMaterial2);
-
+		tryMaterial2 = SAMPLE_NEW(RenderMaterial)(*getRenderer(), PxVec3(1.0f, 1.0f, 1.0f), 1.0f, false, 103, tryTexture2);
+		mRenderMaterials.push_back(tryMaterial2);
+	}
 	// Creazione mesh
 	buildTest();
 
-	mApplication.setMouseCursorHiding(true);
-	mApplication.setMouseCursorRecentering(true);
-	mCameraController.init(PxVec3(0.0f, 10.0f, 0.0f), PxVec3(0.0f, 0.0f, 0.0f));
-	mCameraController.setMouseSensitivity(0.5f);
+	//Setting application
+	//mApplication.setMouseCursorHiding(true);
+	//mApplication.setMouseCursorRecentering(true);
+
+	//mCameraController.init(PxVec3(0.0f, 10.0f, 0.0f), PxVec3(0.0f, 0.0f, 0.0f));
+	//mCameraController.setMouseSensitivity(0.5f);
+
+	//-----------------Codice preso da SampleBridge----------------
+	mControllerManager = PxCreateControllerManager(getActiveScene());
+	ControlledActorDesc desc;
+	{
+		
+		desc.mType = PxControllerShapeType::eCAPSULE;
+		//desc.mPosition = mControllerInitialPosition;
+		desc.mSlopeLimit = SLOPE_LIMIT;
+		desc.mContactOffset = CONTACT_OFFSET;
+		desc.mStepOffset = STEP_OFFSET;
+		desc.mInvisibleWallHeight = INVISIBLE_WALLS_HEIGHT;
+		desc.mMaxJumpHeight = MAX_JUMP_HEIGHT;
+		desc.mRadius = gControllerRadius;
+		desc.mHeight = gStandingSize;
+		desc.mCrouchHeight = gCrouchingSize;
+		//	desc.mReportCallback = this;
+		//	desc.mBehaviorCallback = this;
+	}
+
+
+	{
+
+		mActor = SAMPLE_NEW(ControlledActor)(*this);
+		mActor->init2(desc, mControllerManager, data);
+		//PxRigidDynamic* armadillo = createDynamicActor(getActiveScene(), getPhysics(),(PxVec3)mControllerInitialPosition,po,)
+		
+		RenderBaseActor* actor0 = mActor->getRenderActorStanding();
+//		RenderBaseActor* actor1 = mActor->getRenderActorCrouching();
+		if (actor0)
+			mRenderActors.push_back(actor0);
+//			dataRender.push_back(actor0);
+//		if (actor1)
+//			mRenderActors.push_back(actor1);
+	}
+
+	mCCTCamera = SAMPLE_NEW(SampleCCTCameraController)(*this);
+	mCCTCamera->setControlled(&mActor, 0, 1);
+	//	mCCTCamera->setFilterData();
+	//mCCTCamera->setFilterCallback(this);
+	mCCTCamera->setGravity(-20.0f);
+
+	setCameraController(mCCTCamera);
+
+	mCCTCamera->setView(0, 0);
+	//-----------------Fine Codice preso da SampleBridge----------------
 }
+
+void SampleHelloWorld::onSubstep(float dtime)
+{
+	updateCharacter(dtime);
+}
+
+void SampleHelloWorld::updateCharacter(float dtime)
+{
+	// compute global pose of the character from CCT
+	//PxExtendedVec3 posExt = mControllerManager->getPosition();
+	PxExtendedVec3 posExt = mActor->getFootPosition();
+	static const PxReal gCharacterScale = 0.1;
+	PxVec3 offset(0.0f, gCharacterScale * 15.0f, 0.0f); // offset from controller center to the foot
+	PxVec3 pos = PxVec3(PxReal(posExt.x), PxReal(posExt.y), PxReal(posExt.z)) - offset;
+	PxTransform tr = PxTransform(pos);
+	dataRender[2]->setTransform(tr);
+	// update character pose and motion 
+	//if (mJump.isJumping() == true)
+	//{
+	//	mCharacter.setTargetPosition(pos);
+	//	mCharacter.setMotion(mMotionHandleJump);
+	//	mCharacter.move(0.25f, true);
+	//}
+	//else
+	{
+		//bool cctActive = mCCTActive; //&& (mJump.isInFreefall() == false);
+		PxTransform jointpos = PxTransform(pos);
+	//	jointTest->setGlobalPose(jointpos, true);
+		//mCharacter.setTargetPosition(pos);
+		//mCharacter.setMotion(mMotionHandleWalk);
+		//mCharacter.move(1.0f, false, cctActive);
+	}
+}
+
 
 void SampleHelloWorld::collectInputEvents(std::vector<const SampleFramework::InputEvent*>& inputEvents)
 {

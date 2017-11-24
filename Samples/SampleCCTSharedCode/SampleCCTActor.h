@@ -34,6 +34,7 @@
 #include "characterkinematic/PxController.h"
 #include "SamplePreprocessor.h"
 #include "SampleCCTJump.h"
+#include "RawLoader.h"
 
 namespace physx
 {
@@ -87,6 +88,7 @@ class PhysXSample;
 						void						reset();
 						void						teleport(const PxVec3& pos);
 						void						sync();
+						PxController * init2(const ControlledActorDesc & desc, PxControllerManager * manager, RAWMesh provabella);
 						void						tryStandup();
 						void						resizeController(PxReal height);
 						void						resizeStanding()			{ resizeController(mStandingSize);	}
