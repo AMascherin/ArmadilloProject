@@ -48,8 +48,6 @@
 
 		virtual	void							newMesh(const RAWMesh&);
 		virtual	void							onInit();
-		virtual void                            onSubstep(float dtime);
-		void updateCharacter(float dtime);
         virtual	void						    onInit(bool restart) { onInit(); }
 
 		virtual void							collectInputEvents(std::vector<const SampleFramework::InputEvent*>& inputEvents);

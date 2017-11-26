@@ -125,6 +125,7 @@ void ControlledActor::sync()
 }
 
 PxController* ControlledActor::init2(const ControlledActorDesc& desc, PxControllerManager* manager, RAWMesh data)
+//Forcing an initialization with an imported RAWMesh
 {
 	const float radius = desc.mRadius;
 	float height = desc.mHeight;
@@ -212,9 +213,9 @@ PxController* ControlledActor::init2(const ControlledActorDesc& desc, PxControll
 				}
 
 				mRenderActorStanding = SAMPLE_NEW(RenderMeshActor)(*renderer, data.mVerts, data.mNbVerts, data.mVertexNormals, data.mUVs, indices, NULL, nbTris);
-				//mRenderActorStanding->setRenderMaterial(101);
-				//SAMPLE_NEW(RenderCapsuleActor)(*renderer, radius, height*0.5f);<
-				mRenderActorCrouching = SAMPLE_NEW(RenderCapsuleActor)(*renderer, radius, crouchHeight*0.5f);
+				
+
+				mRenderActorCrouching = SAMPLE_NEW(RenderCapsuleActor)(*renderer, radius, crouchHeight*0.5f); //TODO
 			}
 		}
 	}

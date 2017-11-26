@@ -72,7 +72,7 @@ static const float gControllerRadius = 0.5f * gScaleFactor;
 
 SampleHelloWorld::SampleHelloWorld(PhysXSampleApplication& app) :	PhysXSample(app)
 {
-	mControllerInitialPosition = PxVec3(18.0f, 18.0f, 18.0f);
+	mControllerInitialPosition = PxVec3(0.0f, 0.0f, 0.0f);
 }
 
 SampleHelloWorld::~SampleHelloWorld()
@@ -82,10 +82,10 @@ SampleHelloWorld::~SampleHelloWorld()
 void SampleHelloWorld::onTickPreRender(float dtime)
 {
 
-	if (dataShape.size()!=dataPos.size())
-		fatalError("Shape e posizioni relative non coincidono. Controllare la presenza di tutte le shape e/o le posizioni");
+	if (dataShape.size()!=dataRender.size())
+		fatalError("Shape e posizioni relative non coincidono. Controllare la presenza di tutti i render object e shape");
 
-	for (int i = 0; i < (int)dataShape.size(); i++) {
+	for (int i = 0; i < (int)dataRender.size(); i++) {
 		dataShape[i]->userData = dataRender[i];
 		{
 			PxSceneReadLock scopedLock(getActiveScene());
@@ -96,10 +96,9 @@ void SampleHelloWorld::onTickPreRender(float dtime)
 			PxTriangleMeshGeometry geometry;
 			dataShape[i]->getTriangleMeshGeometry(geometry);
 			dataRender[i]->setMeshScale(geometry.scale);
-		}
-	
+		}	
 	}
-	mActor->sync();    
+	mActor->sync();
     PhysXSample::onTickPreRender(dtime);
 }
 
@@ -283,11 +282,9 @@ PxRigidStatic* SampleHelloWorld::buildTest()
 
 	PxShape* try_data, *try_data1, *try_data2;
 	PxRigidActor* actor = createRigidActor(getActiveScene(), getPhysics(), try_data, pos, geom, getDefaultMaterial());
-	//PxRigidDynamic* actordyn = createDynamicActor(getActiveScene(), getPhysics(), try_data1, pos1, geom1, getDefaultMaterial());
 	PxRigidActor* actordyn = createRigidActor(getActiveScene(), getPhysics(), try_data1, pos1, geom1, getDefaultMaterial());
 	
 	PxRigidDynamic* jointTest = createDynamicActor(getActiveScene(), getPhysics(), try_data2, pos2, geom2, getDefaultMaterial());
-	//jointTest = createDynamicActor(getActiveScene(), getPhysics(), try_data2, pos2, geom2, getDefaultMaterial());
 	//Posizione rispetto al quale l'oggetto è vincolato a muoversi
 	//NOTA: La scimmia nera è posizionata sopra l'origine come riferimento
 
@@ -409,18 +406,21 @@ void SampleHelloWorld::onInit()
 		//	desc.mBehaviorCallback = this;
 	}
 
-
 	{
 
 		mActor = SAMPLE_NEW(ControlledActor)(*this);
-		mActor->init2(desc, mControllerManager, data);
-		//PxRigidDynamic* armadillo = createDynamicActor(getActiveScene(), getPhysics(),(PxVec3)mControllerInitialPosition,po,)
+		mActor->init2(desc, mControllerManager, data2);
+
 		
 		RenderBaseActor* actor0 = mActor->getRenderActorStanding();
+		PxMeshScale* sc = new PxMeshScale(PxVec3(0.5f, 0.5f, 0.5f));
+		actor0->setMeshScale(*sc);
+
 //		RenderBaseActor* actor1 = mActor->getRenderActorCrouching();
-		if (actor0)
+		if (actor0) {
+			actor0->setRenderMaterial(mRenderMaterials[2]);
 			mRenderActors.push_back(actor0);
-//			dataRender.push_back(actor0);
+		}
 //		if (actor1)
 //			mRenderActors.push_back(actor1);
 	}
@@ -432,44 +432,10 @@ void SampleHelloWorld::onInit()
 	mCCTCamera->setGravity(-20.0f);
 
 	setCameraController(mCCTCamera);
-
 	mCCTCamera->setView(0, 0);
+	
 	//-----------------Fine Codice preso da SampleBridge----------------
 }
-
-void SampleHelloWorld::onSubstep(float dtime)
-{
-	updateCharacter(dtime);
-}
-
-void SampleHelloWorld::updateCharacter(float dtime)
-{
-	// compute global pose of the character from CCT
-	//PxExtendedVec3 posExt = mControllerManager->getPosition();
-	PxExtendedVec3 posExt = mActor->getFootPosition();
-	static const PxReal gCharacterScale = 0.1;
-	PxVec3 offset(0.0f, gCharacterScale * 15.0f, 0.0f); // offset from controller center to the foot
-	PxVec3 pos = PxVec3(PxReal(posExt.x), PxReal(posExt.y), PxReal(posExt.z)) - offset;
-	PxTransform tr = PxTransform(pos);
-	dataRender[2]->setTransform(tr);
-	// update character pose and motion 
-	//if (mJump.isJumping() == true)
-	//{
-	//	mCharacter.setTargetPosition(pos);
-	//	mCharacter.setMotion(mMotionHandleJump);
-	//	mCharacter.move(0.25f, true);
-	//}
-	//else
-	{
-		//bool cctActive = mCCTActive; //&& (mJump.isInFreefall() == false);
-		PxTransform jointpos = PxTransform(pos);
-	//	jointTest->setGlobalPose(jointpos, true);
-		//mCharacter.setTargetPosition(pos);
-		//mCharacter.setMotion(mMotionHandleWalk);
-		//mCharacter.move(1.0f, false, cctActive);
-	}
-}
-
 
 void SampleHelloWorld::collectInputEvents(std::vector<const SampleFramework::InputEvent*>& inputEvents)
 {
