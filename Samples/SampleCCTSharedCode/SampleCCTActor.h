@@ -36,6 +36,7 @@
 #include "SampleCCTJump.h"
 #include "RawLoader.h"
 
+#include "SampleCamera.h"
 namespace physx
 {
 	class PxController;
@@ -87,8 +88,10 @@ class PhysXSample;
 						PxExtendedVec3				getFootPosition()	const;
 						void						reset();
 						void						teleport(const PxVec3& pos);
-						void						sync();
-						PxController * init2(const ControlledActorDesc & desc, PxControllerManager * manager, RAWMesh provabella);
+
+                        void                        synCamera(Camera camera, const PxVec3 velocity);
+                        void						sync();
+						PxController*               init2(const ControlledActorDesc & desc, PxControllerManager * manager, RAWMesh provabella);
 						void						tryStandup();
 						void						resizeController(PxReal height);
 						void						resizeStanding()			{ resizeController(mStandingSize);	}

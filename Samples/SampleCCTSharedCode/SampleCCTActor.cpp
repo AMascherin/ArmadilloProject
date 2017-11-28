@@ -35,6 +35,7 @@
 #include "RenderCapsuleActor.h"
 #include "PhysXSample.h"
 #include "RenderMeshActor.h"
+
 using namespace physx;
 using namespace SampleRenderer;
 
@@ -61,7 +62,7 @@ ControlledActorDesc::ControlledActorDesc() :
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
+PxExtendedVec3 oldPose;
 ControlledActor::ControlledActor(PhysXSample& owner) :
 	mOwner					(owner),
 	mType					(PxControllerShapeType::eFORCE_DWORD),
@@ -77,6 +78,7 @@ ControlledActor::ControlledActor(PhysXSample& owner) :
 	mInitialPosition = PxExtendedVec3(0,0,0);
 	mDelta = PxVec3(0);
 	mTransferMomentum = false;
+    oldPose = mInitialPosition;
 }
 
 ControlledActor::~ControlledActor()
@@ -102,6 +104,57 @@ PxExtendedVec3 ControlledActor::getFootPosition() const
 	return mController->getFootPosition();
 }
 
+
+// Funzione sincronizzazione oggetto-camera + variabili di supporto aggiunte
+float deg = 0.f, oldeg = 0.f;
+PxVec3 oldvel = PxVec3(0,0,0);
+void ControlledActor::synCamera(Camera camera, const PxVec3 velocity){
+
+    if (mDoStandup)
+        tryStandup();
+    
+    if (mRenderActorStanding)
+        mRenderActorStanding->setRendering(!mIsCrouching);
+    if (mRenderActorCrouching)
+        mRenderActorCrouching->setRendering(mIsCrouching);
+
+    const PxExtendedVec3& newPos = mController->getPosition();
+    
+    // Calcolo della rotazione dell'oggeto
+    PxVec3 testCross = PxVec3(-velocity.z, 0, velocity.x);
+    testCross.normalize();
+
+    // Posizione + rotazione oggetto se non si muove (rimane stato precedente)
+    const PxTransform tro(toVec3(newPos), PxQuat(oldeg, oldvel));
+
+    // Aggiornamento rotazione oggetto
+    if (mRenderActorStanding)
+        // Nel caso ogni coordinate della nuova posizione sia diversa da quella precedente...
+        if ((newPos.x != oldPose.x && newPos.y != oldPose.y && newPos.z != oldPose.z)) {
+
+            //shdfnd::printFormatted("%f %f %f \n", newPos.x, newPos.y, newPos.z);
+            //shdfnd::printFormatted("tc:%f %f %f \n", velocity.x, velocity.y, velocity.z);
+
+            // ...aumento angolo rotazione e ruoto effettivamente l'oggetto
+            deg -= 0.001f;
+            const PxTransform trn(toVec3(newPos), PxQuat(deg, testCross));
+            mRenderActorStanding->setTransform(trn);
+
+            // Salvo dati aggiornati
+            oldeg = deg;
+            oldvel = testCross;
+        }
+        else {
+            mRenderActorStanding->setTransform(tro);
+        }
+
+    if (mRenderActorCrouching)
+        mRenderActorCrouching->setTransform(tro);
+
+    // Salvo dati posizione aggiornati
+    oldPose = newPos;
+}
+
 void ControlledActor::sync()
 {
 	if(mDoStandup)
@@ -111,17 +164,31 @@ void ControlledActor::sync()
 		mRenderActorStanding->setRendering(!mIsCrouching);
 	if(mRenderActorCrouching)
 		mRenderActorCrouching->setRendering(mIsCrouching);
-
+    
 	const PxExtendedVec3& newPos = mController->getPosition();
+    const PxTransform tr(toVec3(newPos), PxQuat(oldeg, PxVec3(1, 0, 0)));
+    //deg -= 0.001f;
+	//const PxTransform test(toVec3(newPos), PxQuat(deg, PxVec3(1, 0, 0)));
 
-	const PxTransform tr(toVec3(newPos));
+    
+    if (mRenderActorStanding)
+        //tr.q     // PxQuat(0.001f, PxVec3(1, 0, 0));
+        if (newPos.x != oldPose.x || newPos.y != oldPose.y || newPos.z != oldPose.z) {
+            deg -= 0.001f;
+            const PxTransform test(toVec3(newPos), PxQuat(deg, PxVec3(1, 0, 0)));
+            mRenderActorStanding->setTransform(test);
+            oldeg = deg;
+        }
+        else
+            mRenderActorStanding->setTransform(tr);
 
-//	shdfnd::printFormatted("%f %f %f\n", tr.p.x, tr.p.y, tr.p.z);
+    //shdfnd::printFormatted("%f %f %f %f\n", tr.p.x, tr.p.y, tr.p.z, oldeg);
+    //shdfnd::printFormatted("%f %f %f %f\n", test.p.x, test.p.y, test.p.z, deg);
 
-	if(mRenderActorStanding)
-		mRenderActorStanding->setTransform(tr);
+
 	if(mRenderActorCrouching)
 		mRenderActorCrouching->setTransform(tr);
+    oldPose = newPos;
 }
 
 PxController* ControlledActor::init2(const ControlledActorDesc& desc, PxControllerManager* manager, RAWMesh data)
@@ -134,7 +201,6 @@ PxController* ControlledActor::init2(const ControlledActorDesc& desc, PxControll
 	PxControllerDesc* cDesc;
 	PxBoxControllerDesc boxDesc;
 	PxCapsuleControllerDesc capsuleDesc;
-
 	if (desc.mType == PxControllerShapeType::eBOX)
 	{
 		height *= 0.5f;
@@ -151,7 +217,7 @@ PxController* ControlledActor::init2(const ControlledActorDesc& desc, PxControll
 		PX_ASSERT(desc.mType == PxControllerShapeType::eCAPSULE);
 		capsuleDesc.height = height;
 		capsuleDesc.radius = radius;
-		capsuleDesc.climbingMode = PxCapsuleClimbingMode::eCONSTRAINED;
+		//capsuleDesc.climbingMode = PxCapsuleClimbingMode::eCONSTRAINED;
 		cDesc = &capsuleDesc;
 	}
 
@@ -195,8 +261,27 @@ PxController* ControlledActor::init2(const ControlledActorDesc& desc, PxControll
 				const PxVec3 standingExtents(radius, height, radius);
 				const PxVec3 crouchingExtents(radius, crouchHeight, radius);
 
-				mRenderActorStanding = SAMPLE_NEW(RenderBoxActor)(*renderer, standingExtents);
-				mRenderActorCrouching = SAMPLE_NEW(RenderBoxActor)(*renderer, crouchingExtents);
+
+                const PxU32* src = data.mIndices;
+
+                const PxU32 nbTris = data.mNbFaces;
+
+                PxU16* indices = (PxU16*)SAMPLE_ALLOC(sizeof(PxU16)*nbTris * 3);
+                for (PxU32 i = 0; i<nbTris; i++)
+                {
+                    indices[i * 3 + 0] = src[i * 3 + 0];
+                    indices[i * 3 + 1] = src[i * 3 + 2];
+                    indices[i * 3 + 2] = src[i * 3 + 1];
+                }
+
+                mRenderActorStanding = SAMPLE_NEW(RenderMeshActor)(*renderer, data.mVerts, data.mNbVerts, data.mVertexNormals, data.mUVs, indices, NULL, nbTris);
+                PxTransform pxt = mRenderActorStanding->getTransform();
+                pxt.q = PxQuat(PxHalfPi, PxVec3(1.0f, 0.0f, 0.0f));
+
+                mRenderActorCrouching = SAMPLE_NEW(RenderMeshActor)(*renderer, data.mVerts, data.mNbVerts, data.mVertexNormals, data.mUVs, indices, NULL, nbTris);
+
+				//mRenenderActorStanding = SAMPLE_NEW(RenderBoxActor)(*renderer, standingExtents);
+				//mRenderActorCrouching = SAMPLE_NEW(RenderBoxActor)(*renderer, crouchingExtents);
 			}
 			else if (desc.mType == PxControllerShapeType::eCAPSULE)
 			{
@@ -215,7 +300,7 @@ PxController* ControlledActor::init2(const ControlledActorDesc& desc, PxControll
 				mRenderActorStanding = SAMPLE_NEW(RenderMeshActor)(*renderer, data.mVerts, data.mNbVerts, data.mVertexNormals, data.mUVs, indices, NULL, nbTris);
 				
 
-				mRenderActorCrouching = SAMPLE_NEW(RenderCapsuleActor)(*renderer, radius, crouchHeight*0.5f); //TODO
+				mRenderActorCrouching = SAMPLE_NEW(RenderMeshActor)(*renderer, data.mVerts, data.mNbVerts, data.mVertexNormals, data.mUVs, indices, NULL, nbTris);//(RenderCapsuleActor)(*renderer, radius, crouchHeight*0.5f); //TODO
 			}
 		}
 	}

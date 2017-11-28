@@ -56,23 +56,42 @@ using namespace SampleFramework;
 
 REGISTER_SAMPLE(SampleHelloWorld, "SampleHelloWorld")
 ////////////////////////////////////////////////////////////////////////////////
-#define CONTACT_OFFSET			0.01f
-#define STEP_OFFSET				0.05f
+/*#define CONTACT_OFFSET			0.01f
+#define STEP_OFFSET				0.01f
 #define SLOPE_LIMIT				0.0f
 #define INVISIBLE_WALLS_HEIGHT	0.0f
 #define MAX_JUMP_HEIGHT			0.0f
 
-static const float gScaleFactor = 1.5f;
+static const float gScaleFactor = 1.0f;// 1.5f;
 static const float gStandingSize = 0.5f * gScaleFactor;
 static const float gCrouchingSize = 0.25f * gScaleFactor;
-static const float gControllerRadius = 0.5f * gScaleFactor;
+static const float gControllerRadius = 0.5f * gScaleFactor;*/
+
+#define CONTACT_OFFSET			0.01f
+//	#define CONTACT_OFFSET			0.1f
+//	#define STEP_OFFSET				0.01f
+#define STEP_OFFSET				0.05f
+//	#define STEP_OFFSET				0.1f
+//	#define STEP_OFFSET				0.2f
+
+//	#define SLOPE_LIMIT				0.8f
+#define SLOPE_LIMIT				0.0f
+//	#define INVISIBLE_WALLS_HEIGHT	6.0f
+#define INVISIBLE_WALLS_HEIGHT	0.0f
+//	#define MAX_JUMP_HEIGHT			4.0f
+#define MAX_JUMP_HEIGHT			0.0f
+static const float gScaleFactor = 1.0f;
+static float gStandingSize = 1.0f * gScaleFactor;
+static const float gCrouchingSize = 0.25f * gScaleFactor;
+static float gControllerRadius = 0.5f * gScaleFactor;
+
 
 
 ///////////////////////////////////////////////////////////////////////////////
 
 SampleHelloWorld::SampleHelloWorld(PhysXSampleApplication& app) :	PhysXSample(app)
 {
-	mControllerInitialPosition = PxVec3(0.0f, 0.0f, 0.0f);
+	mControllerInitialPosition = PxExtendedVec3(0,0 , 10);
 }
 
 SampleHelloWorld::~SampleHelloWorld()
@@ -81,24 +100,26 @@ SampleHelloWorld::~SampleHelloWorld()
 
 void SampleHelloWorld::onTickPreRender(float dtime)
 {
-
 	if (dataShape.size()!=dataRender.size())
 		fatalError("Shape e posizioni relative non coincidono. Controllare la presenza di tutti i render object e shape");
 
 	for (int i = 0; i < (int)dataRender.size(); i++) {
 		dataShape[i]->userData = dataRender[i];
 		{
-			PxSceneReadLock scopedLock(getActiveScene());
+            PxSceneReadLock scopedLock(*mScene);// getActiveScene());
 
 			dataRender[i]->setPhysicsShape(dataShape[i], dataShape[i]->getActor());
-			dataRender[i]->setEnableCameraCull(true);
+            dataRender[i]->setEnableCameraCull(true);
 
 			PxTriangleMeshGeometry geometry;
 			dataShape[i]->getTriangleMeshGeometry(geometry);
 			dataRender[i]->setMeshScale(geometry.scale);
 		}	
 	}
-	mActor->sync();
+
+    // metto il lock sulla risorsa per ottenere la velocità lineare dell'attore in movimento
+    PxSceneWriteLock scopedLock(*mScene);
+    mActor->synCamera(mApplication.getCamera(), mActor->getController()->getActor()->getLinearVelocity());
     PhysXSample::onTickPreRender(dtime);
 }
 
@@ -247,14 +268,14 @@ PxJoint* createDampedD6(PxRigidActor* a0, const PxTransform& t0, PxRigidActor* a
 PxRigidStatic* SampleHelloWorld::buildTest()
 {
 	// Creazione mesh con relativa posizione iniziale
-	PxTransform pos = PxTransform(PxVec3(0, 10, 0));
-	createRAWMeshFromObjMesh("Monkey.obj", pos, 101, data);    
+    PxTransform pos = PxTransform(PxVec3(0, 0, 0));//, PxQuat(-PxHalfPi, PxVec3(1.0f, 0.0f, 0.0f)));// PxQuat(-0.0017525638f, -0.24773766f, 0.00040674198f, -0.96882552f));
+	createRAWMeshFromObjMesh("sfera_l2.obj", pos, 101, data);    
 	dataPos.push_back(pos);
 
-	PxTransform pos1 = PxTransform(PxVec3(0, 10, -10));
+    PxTransform pos1 = PxTransform(PxVec3(0, 1, 0));// , PxQuat(PxHalfPi, PxVec3(1.0f, 0.0f, 0.0f)));
 	createRAWMeshFromObjMesh("Monkey.obj", pos1, 102, data1);  
 	dataPos.push_back(pos1);
-
+    
 	PxTransform pos2 = PxTransform(PxVec3(0, 0, -10));
 	createRAWMeshFromObjMesh("JointTest2.obj", pos1, 103, data2);
 	dataPos.push_back(pos2);
@@ -264,7 +285,7 @@ PxRigidStatic* SampleHelloWorld::buildTest()
 	if (!triMesh)
 		fatalError("creating the triangle mesh failed");
 
-	//Gli attori dinamici non supportano le triangle mesh. E' necessario utilizzare le convexMesh
+    //Gli attori dinamici non supportano le triangle mesh. E' necessario utilizzare le convexMesh
     PxConvexMesh *conMesh = PxToolkit::createConvexMesh(getPhysics(), getCooking(), data1.mVerts, data1.mNbVerts, PxConvexFlag::eCOMPUTE_CONVEX);
     if (!conMesh)
 		fatalError("creating the triangle mesh failed");
@@ -280,23 +301,25 @@ PxRigidStatic* SampleHelloWorld::buildTest()
 	PxConvexMeshGeometry   geom1(conMesh);
 	PxConvexMeshGeometry   geom2(conMesh2);
 
-	PxShape* try_data, *try_data1, *try_data2;
+    
+    
+    PxShape* try_data, *try_data1, *try_data2;
 	PxRigidActor* actor = createRigidActor(getActiveScene(), getPhysics(), try_data, pos, geom, getDefaultMaterial());
 	PxRigidActor* actordyn = createRigidActor(getActiveScene(), getPhysics(), try_data1, pos1, geom1, getDefaultMaterial());
-	
 	PxRigidDynamic* jointTest = createDynamicActor(getActiveScene(), getPhysics(), try_data2, pos2, geom2, getDefaultMaterial());
 	//Posizione rispetto al quale l'oggetto è vincolato a muoversi
 	//NOTA: La scimmia nera è posizionata sopra l'origine come riferimento
 
 	// PxTransform pos2 = PxTransform(PxVec3(0, 0, -10));
-	PxTransform jointpos = PxTransform(PxVec3(0, 0, 2)); 
-	//TEST JOINT:
+	PxTransform jointpos = PxTransform(PxVec3(0, 0, 2));
+
+    //TEST JOINT:
 	(*createDampedD6)(NULL, pos2, jointTest, jointpos); //-->in questo caso l'oggetto è posizionato nel punto pos2 e ruota attorno al proprio asse y
 	//(*createDampedD6)(NULL, pos2, jointTest, pos2);    //-->in questo caso l'oggetto è posizionato nell'origine e ruota attorno a pos2
 	//(*createDampedD6)(NULL, jointpos, jointTest, PxTransform(PxVec3(0,0,10)));  //-->oggetto posizionato in pos2 e ruota attorno all'origine
 	//(*createDampedD6)(NULL, jointpos, jointTest, pos2);  //-->oggetto posizionato in -pos2 e ruota attorno all'origine
 	// (*createDampedD6)(NULL, jointpos, jointTest, jointpos); //-->oggetto posizionato nell'origine e ruota attorno al proprio asse y
-
+    
 	dataShape.push_back(try_data);
 	dataShape.push_back(try_data1);
 	dataShape.push_back(try_data2);
@@ -354,6 +377,7 @@ void SampleHelloWorld::onInit()
 	PhysXSample::onInit();
     PxSceneWriteLock scopedLock(*mScene);
 
+    getActiveScene().setGravity(PxVec3(0.0f, -9.81f, 0.0f));
 	//Importo materiali/texture
 	{
 		RAWTexture Texturedata;
@@ -381,9 +405,9 @@ void SampleHelloWorld::onInit()
 	buildTest();
 
 	//Setting application
-	//mApplication.setMouseCursorHiding(true);
-	//mApplication.setMouseCursorRecentering(true);
-
+	mApplication.setMouseCursorHiding(true);
+	mApplication.setMouseCursorRecentering(true);
+    
 	//mCameraController.init(PxVec3(0.0f, 10.0f, 0.0f), PxVec3(0.0f, 0.0f, 0.0f));
 	//mCameraController.setMouseSensitivity(0.5f);
 
@@ -391,40 +415,60 @@ void SampleHelloWorld::onInit()
 	mControllerManager = PxCreateControllerManager(getActiveScene());
 	ControlledActorDesc desc;
 	{
-		
-		desc.mType = PxControllerShapeType::eCAPSULE;
-		//desc.mPosition = mControllerInitialPosition;
+        // Caso controllore sia una capsula
+		/*desc.mType = PxControllerShapeType::eCAPSULE;
+        desc.mPosition = mControllerInitialPosition;
 		desc.mSlopeLimit = SLOPE_LIMIT;
 		desc.mContactOffset = CONTACT_OFFSET;
 		desc.mStepOffset = STEP_OFFSET;
 		desc.mInvisibleWallHeight = INVISIBLE_WALLS_HEIGHT;
 		desc.mMaxJumpHeight = MAX_JUMP_HEIGHT;
 		desc.mRadius = gControllerRadius;
-		desc.mHeight = gStandingSize;
+        desc.mHeight = gStandingSize;
 		desc.mCrouchHeight = gCrouchingSize;
 		//	desc.mReportCallback = this;
-		//	desc.mBehaviorCallback = this;
-	}
+		//	desc.mBehaviorCallback = this;*/
 
+        // Caso controllore sia un cubo
+        desc.mType = PxControllerShapeType::eBOX;
+        desc.mPosition = mControllerInitialPosition;
+        desc.mSlopeLimit = SLOPE_LIMIT;
+        desc.mContactOffset = CONTACT_OFFSET;
+        desc.mStepOffset = STEP_OFFSET;
+        desc.mInvisibleWallHeight = INVISIBLE_WALLS_HEIGHT;
+        desc.mMaxJumpHeight = MAX_JUMP_HEIGHT;
+        desc.mRadius = 0.5f;// gControllerRadius; // IMPORTANTE NON MODIFICARE SE NON IN RELAZIONE ALLA MESH
+        desc.mHeight = 0.01f; //gStandingSize;    // IMPORTANTE NON MODIFICARE SE NON IN RELAZIONE ALLA MESH
+        desc.mCrouchHeight = gCrouchingSize;
+        //desc.mReportCallback = this;
+	}
 	{
 
 		mActor = SAMPLE_NEW(ControlledActor)(*this);
-		mActor->init2(desc, mControllerManager, data2);
+        mActor->init2(desc, mControllerManager, data);
 
-		
+        // Lasciata in caso di controllo
+        //mActor->init(desc, mControllerManager);// , data2);
+
 		RenderBaseActor* actor0 = mActor->getRenderActorStanding();
-		PxMeshScale* sc = new PxMeshScale(PxVec3(0.5f, 0.5f, 0.5f));
-		actor0->setMeshScale(*sc);
-
-//		RenderBaseActor* actor1 = mActor->getRenderActorCrouching();
-		if (actor0) {
-			actor0->setRenderMaterial(mRenderMaterials[2]);
+        if (actor0) {
+            actor0->setRenderMaterial(mRenderMaterials[0]);
+            mRenderActors.push_back(actor0);
+        }
+		
+        // Codice vecchio
+        //PxMeshScale* sc = new PxMeshScale(PxVec3(1.2f, 1.2f, 1.2f));
+		//actor0->setMeshScale(*sc);
+        //RenderBaseActor* actor1 = mActor->getRenderActorCrouching();
+		/*if (actor0) {
+            //actor0->setTransform(PxTransform(PxVec3(0, 0, 0), PxQuat(2 * PxHalfPi, PxVec3(1.0f, 0.0f, 0.0f))));
+			actor0->setRenderMaterial(mRenderMaterials[0]);
 			mRenderActors.push_back(actor0);
-		}
+		}*/
 //		if (actor1)
 //			mRenderActors.push_back(actor1);
 	}
-
+    
 	mCCTCamera = SAMPLE_NEW(SampleCCTCameraController)(*this);
 	mCCTCamera->setControlled(&mActor, 0, 1);
 	//	mCCTCamera->setFilterData();
@@ -436,6 +480,20 @@ void SampleHelloWorld::onInit()
 	
 	//-----------------Fine Codice preso da SampleBridge----------------
 }
+
+// Metodo per liberare il controllerManager e l'oggetto mCCTCamera
+void SampleHelloWorld::onShutdown()
+{
+    {
+        PxSceneWriteLock scopedLock(*mScene);
+        DELETESINGLE(mCCTCamera);
+
+        mControllerManager->release();
+    }
+
+    PhysXSample::onShutdown();
+}
+
 
 void SampleHelloWorld::collectInputEvents(std::vector<const SampleFramework::InputEvent*>& inputEvents)
 {

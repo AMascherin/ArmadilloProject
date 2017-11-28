@@ -48,6 +48,7 @@
 
 		virtual	void							newMesh(const RAWMesh&);
 		virtual	void							onInit();
+        void onShutdown();
         virtual	void						    onInit(bool restart) { onInit(); }
 
 		virtual void							collectInputEvents(std::vector<const SampleFramework::InputEvent*>& inputEvents);
@@ -61,7 +62,7 @@
 		PxControllerManager*			mControllerManager;
 	//	PxExtendedVec3					mControllerInitialPosition;
 	//	PxCapsuleController*			mController;
-		PxVec3							mControllerInitialPosition;
+		PxExtendedVec3							mControllerInitialPosition;
 		bool                            mCCTActive;
 		PxVec3                          mCCTDisplacement;
 		PxVec3                          mCCTDisplacementPrevStep;
