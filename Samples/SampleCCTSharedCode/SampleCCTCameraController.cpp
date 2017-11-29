@@ -38,6 +38,8 @@
 #include <SampleUserInputIds.h>
 #include <SampleUserInputDefines.h>
 
+//#define MYINPUT 21
+
 using namespace SampleRenderer;
 using namespace SampleFramework;
 
@@ -132,7 +134,11 @@ SampleCCTCameraController::SampleCCTCameraController(PhysXSample& base) :
 	mCameraMaxSpeed		(FLT_MAX),
 	mJumpForce			(30.0f),
 	mGravity			(-9.81f),
-	mLinkCameraToPhysics(false)
+	mLinkCameraToPhysics(false),
+	height				(1.0f),
+	cameraDist			(5.0f),
+	mHeightUp			(false), 
+	mHeightDown			(false)
 {
 	Console* console = base.getConsole();
 	if(console)
@@ -175,9 +181,12 @@ void SampleCCTCameraController::collectInputEvents(std::vector<const SampleFrame
 	//digital gamepad events											
 	DIGITAL_INPUT_EVENT_DEF(CAMERA_JUMP,													GAMEPAD_SOUTH,				GAMEPAD_SOUTH,				GAMEPAD_SOUTH,				GAMEPAD_SOUTH,				GAMEPAD_SOUTH,				AKEY_UNKNOWN,			GAMEPAD_SOUTH,				IKEY_UNKNOWN, 			LINUXKEY_UNKNOWN,	GAMEPAD_SOUTH);
 	DIGITAL_INPUT_EVENT_DEF(CAMERA_CROUCH,													GAMEPAD_LEFT_STICK,			GAMEPAD_LEFT_STICK,			GAMEPAD_LEFT_STICK,			GAMEPAD_LEFT_STICK,			GAMEPAD_LEFT_STICK,			AKEY_UNKNOWN,			GAMEPAD_LEFT_STICK,			IKEY_UNKNOWN, 			LINUXKEY_UNKNOWN,	GAMEPAD_LEFT_STICK);
-	DIGITAL_INPUT_EVENT_DEF(CAMERA_CONTROLLER_INCREASE,										GAMEPAD_RIGHT_SHOULDER_TOP,	GAMEPAD_RIGHT_SHOULDER_TOP,	GAMEPAD_RIGHT_SHOULDER_TOP,	GAMEPAD_RIGHT_SHOULDER_TOP,	GAMEPAD_RIGHT_SHOULDER_TOP,	AKEY_UNKNOWN,			GAMEPAD_RIGHT_SHOULDER_TOP,	IKEY_UNKNOWN, 			LINUXKEY_UNKNOWN,	GAMEPAD_RIGHT_SHOULDER_TOP);
-	DIGITAL_INPUT_EVENT_DEF(CAMERA_CONTROLLER_DECREASE,										GAMEPAD_LEFT_SHOULDER_TOP,	GAMEPAD_LEFT_SHOULDER_TOP,	GAMEPAD_LEFT_SHOULDER_TOP,	GAMEPAD_LEFT_SHOULDER_TOP,	GAMEPAD_LEFT_SHOULDER_TOP,	AKEY_UNKNOWN,			GAMEPAD_LEFT_SHOULDER_TOP,	IKEY_UNKNOWN, 			LINUXKEY_UNKNOWN,	GAMEPAD_LEFT_SHOULDER_TOP);
-
+//	DIGITAL_INPUT_EVENT_DEF(CAMERA_CONTROLLER_INCREASE,										GAMEPAD_RIGHT_SHOULDER_TOP,	GAMEPAD_RIGHT_SHOULDER_TOP,	GAMEPAD_RIGHT_SHOULDER_TOP,	GAMEPAD_RIGHT_SHOULDER_TOP,	GAMEPAD_RIGHT_SHOULDER_TOP,	AKEY_UNKNOWN,			GAMEPAD_RIGHT_SHOULDER_TOP,	IKEY_UNKNOWN, 			LINUXKEY_UNKNOWN,	GAMEPAD_RIGHT_SHOULDER_TOP);
+//	DIGITAL_INPUT_EVENT_DEF(CAMERA_CONTROLLER_DECREASE,										GAMEPAD_LEFT_SHOULDER_TOP,	GAMEPAD_LEFT_SHOULDER_TOP,	GAMEPAD_LEFT_SHOULDER_TOP,	GAMEPAD_LEFT_SHOULDER_TOP,	GAMEPAD_LEFT_SHOULDER_TOP,	AKEY_UNKNOWN,			GAMEPAD_LEFT_SHOULDER_TOP,	IKEY_UNKNOWN, 			LINUXKEY_UNKNOWN,	GAMEPAD_LEFT_SHOULDER_TOP);
+//	DIGITAL_INPUT_EVENT_DEF(CAMERA_SPEED_INCREASE,										    GAMEPAD_RIGHT_SHOULDER_BOT, GAMEPAD_RIGHT_SHOULDER_BOT, GAMEPAD_RIGHT_SHOULDER_BOT, GAMEPAD_RIGHT_SHOULDER_BOT, GAMEPAD_RIGHT_SHOULDER_BOT, AKEY_UNKNOWN,			GAMEPAD_RIGHT_SHOULDER_BOT, IKEY_UNKNOWN, LINUXKEY_UNKNOWN, GAMEPAD_RIGHT_SHOULDER_BOT);
+//	DIGITAL_INPUT_EVENT_DEF(CAMERA_SPEED_DECREASE,											GAMEPAD_LEFT_SHOULDER_TOP, GAMEPAD_LEFT_SHOULDER_TOP, GAMEPAD_LEFT_SHOULDER_TOP, GAMEPAD_LEFT_SHOULDER_TOP, GAMEPAD_LEFT_SHOULDER_TOP, AKEY_UNKNOWN, GAMEPAD_LEFT_SHOULDER_TOP, IKEY_UNKNOWN, LINUXKEY_UNKNOWN, GAMEPAD_LEFT_SHOULDER_TOP);
+	DIGITAL_INPUT_EVENT_DEF(CAMERA_DISTANCE_INCREASE ,										GAMEPAD_RIGHT_SHOULDER_BOT, GAMEPAD_RIGHT_SHOULDER_BOT, GAMEPAD_RIGHT_SHOULDER_BOT, GAMEPAD_RIGHT_SHOULDER_BOT, GAMEPAD_RIGHT_SHOULDER_BOT, AKEY_UNKNOWN, GAMEPAD_RIGHT_SHOULDER_BOT, IKEY_UNKNOWN, LINUXKEY_UNKNOWN, GAMEPAD_RIGHT_SHOULDER_BOT);
+	DIGITAL_INPUT_EVENT_DEF(CAMERA_DISTANCE_DECREASE,										GAMEPAD_LEFT_SHOULDER_BOT, GAMEPAD_LEFT_SHOULDER_BOT, GAMEPAD_LEFT_SHOULDER_BOT, GAMEPAD_LEFT_SHOULDER_BOT, GAMEPAD_LEFT_SHOULDER_BOT, AKEY_UNKNOWN, GAMEPAD_LEFT_SHOULDER_BOT, IKEY_UNKNOWN, LINUXKEY_UNKNOWN, GAMEPAD_LEFT_SHOULDER_BOT);
 	//analog gamepad events
 	ANALOG_INPUT_EVENT_DEF(CAMERA_GAMEPAD_ROTATE_LEFT_RIGHT, GAMEPAD_ROTATE_SENSITIVITY,	GAMEPAD_RIGHT_STICK_X,		GAMEPAD_RIGHT_STICK_X,		GAMEPAD_RIGHT_STICK_X,		GAMEPAD_RIGHT_STICK_X,		GAMEPAD_RIGHT_STICK_X,		GAMEPAD_RIGHT_STICK_X,	GAMEPAD_RIGHT_STICK_X,		GAMEPAD_RIGHT_STICK_X, 	LINUXKEY_UNKNOWN,	GAMEPAD_RIGHT_STICK_X);
 	ANALOG_INPUT_EVENT_DEF(CAMERA_GAMEPAD_ROTATE_UP_DOWN, GAMEPAD_ROTATE_SENSITIVITY,		GAMEPAD_RIGHT_STICK_Y,		GAMEPAD_RIGHT_STICK_Y,		GAMEPAD_RIGHT_STICK_Y,		GAMEPAD_RIGHT_STICK_Y,		GAMEPAD_RIGHT_STICK_Y,		GAMEPAD_RIGHT_STICK_Y,	GAMEPAD_RIGHT_STICK_Y,		GAMEPAD_RIGHT_STICK_Y, 	LINUXKEY_UNKNOWN,	GAMEPAD_RIGHT_STICK_Y);
@@ -226,7 +235,7 @@ void SampleCCTCameraController::onDigitalInputEvent(const SampleFramework::Input
 				startJump();
 		}
 		break;
-	case CAMERA_CROUCH:
+	case CAMERA_CROUCH: //TODO: Remove
 		{
 			if(val)
 			{
@@ -238,16 +247,16 @@ void SampleCCTCameraController::onDigitalInputEvent(const SampleFramework::Input
 			}
 		}
 		break;
-	case CAMERA_CONTROLLER_INCREASE:
+	case CAMERA_CONTROLLER_INCREASE: //Remove, abbiamo solo un controller
 		{
-			if(val)
+			if(val)				
 			{
 				if(mControlledIndex<mNbCCTs-1)
 					mControlledIndex++;
 			}
 		}
 		break;
-	case CAMERA_CONTROLLER_DECREASE:
+	case CAMERA_CONTROLLER_DECREASE: //Remove
 		{
 			if(val)
 			{
@@ -256,12 +265,12 @@ void SampleCCTCameraController::onDigitalInputEvent(const SampleFramework::Input
 			}
 		}
 		break;
-	case CAMERA_SPEED_INCREASE:
-		{
+	case CAMERA_SPEED_INCREASE: //Unused
+		{			
 			if(val)
 			{
-				if(mKeyShiftDown)
-				{
+				
+				if(mKeyShiftDown)				{
 					if(mRunningSpeed * 2.0f <= mCameraMaxSpeed)
 						mRunningSpeed *= 2.f;
 				}
@@ -276,7 +285,7 @@ void SampleCCTCameraController::onDigitalInputEvent(const SampleFramework::Input
 			}
 		}
 		break;
-	case CAMERA_SPEED_DECREASE:
+	case CAMERA_SPEED_DECREASE: //Unused
 		{
 			if(val)
 			{
@@ -292,6 +301,20 @@ void SampleCCTCameraController::onDigitalInputEvent(const SampleFramework::Input
 			}
 		}
 		break;
+	case CAMERA_DISTANCE_INCREASE: 
+	{
+		shdfnd::printFormatted("CAMERA_DISTANCE_INCREASE");
+		//if (val)			
+			mHeightUp = val;
+	}
+		break;
+	case CAMERA_DISTANCE_DECREASE:
+	{
+		shdfnd::printFormatted("CAMERA_DISTANCE_DECREASE");
+		//if (val)
+			mHeightDown = val;			
+	}
+	break;
 	}
 
 }
@@ -302,6 +325,7 @@ static PX_FORCE_INLINE PxReal remapAxisValue(PxReal absolutePosition)
 }
 
 void SampleCCTCameraController::onAnalogInputEvent(const SampleFramework::InputEvent& ie, float val)
+
 {
 	if(ie.m_Id == CAMERA_GAMEPAD_ROTATE_LEFT_RIGHT)
 	{
@@ -337,6 +361,7 @@ void SampleCCTCameraController::setView(PxReal pitch, PxReal yaw)
 	mTargetPitch = pitch;
 	mTargetYaw   = yaw;
 }
+
 
 void SampleCCTCameraController::update(Camera& camera, PxReal dtime)
 {
@@ -494,6 +519,7 @@ void SampleCCTCameraController::update(Camera& camera, PxReal dtime)
 //shdfnd::printFormatted("Pitch: %f\n", mTargetPitch);
 
 		PxExtendedVec3 camTarget;
+		
 		if(!mLinkCameraToPhysics)
 		{
 			camTarget = cct->getFootPosition();
@@ -506,11 +532,21 @@ void SampleCCTCameraController::update(Camera& camera, PxReal dtime)
 			camTarget = PxExtendedVec3(physicsPos.x, physicsPos.y, physicsPos.z);
 		}
 
-		const float height = 1.0f;
+		if (mHeightUp) { 
+			height += 0.001f;
+			cameraDist += 0.001f;
+		}
+		if (mHeightDown) { 
+			if((height-0.001f)>0.f)
+			{
+				height -= 0.001f;
+				cameraDist -= 0.001f;
+			}
+		}
 		camTarget += PxVec3(0, height, 0);
-		const PxVec3 target = toVec3(camTarget) - camera.getViewDir()*5.0f;
-//const PxVec3 target2 = target;
-//shdfnd::printFormatted("target: %f | %f | %f\n", target.x, target.y, target.z);
+		const PxVec3 target = toVec3(camTarget) - camera.getViewDir()*cameraDist;
+		//const PxVec3 target = toVec3(camTarget) - camera.getViewDir()*5.0f; //Valore di default
+
 		camera.setPos(target);
 	}
 }

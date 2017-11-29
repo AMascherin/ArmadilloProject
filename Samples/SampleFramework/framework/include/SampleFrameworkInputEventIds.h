@@ -56,7 +56,11 @@ enum SampleFrameworkInputEventIds
 	CAMERA_CONTROLLER_INCREASE,
 	CAMERA_CONTROLLER_DECREASE,
 
+	CAMERA_DISTANCE_INCREASE,
+	CAMERA_DISTANCE_DECREASE,
+
 	NUM_SAMPLE_FRAMEWORK_INPUT_EVENT_IDS, 
+
 };
 
 // InputEvent descriptions used by SampleApplication
@@ -84,6 +88,9 @@ const char* const SampleFrameworkInputEventDescriptions[] =
 	"crouch",
 	"next controller",
 	"previous controller",
+
+	"Test",
+	"MyInput",
 };
 
 PX_COMPILE_TIME_ASSERT(PX_ARRAY_SIZE(SampleFrameworkInputEventDescriptions) == NUM_SAMPLE_FRAMEWORK_INPUT_EVENT_IDS);

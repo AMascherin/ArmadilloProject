@@ -272,8 +272,8 @@ PxRigidStatic* SampleHelloWorld::buildTest()
 	createRAWMeshFromObjMesh("sfera_l2.obj", pos, 101, data);    
 	dataPos.push_back(pos);
 
-    PxTransform pos1 = PxTransform(PxVec3(0, 1, 0));// , PxQuat(PxHalfPi, PxVec3(1.0f, 0.0f, 0.0f)));
-	createRAWMeshFromObjMesh("Monkey.obj", pos1, 102, data1);  
+    PxTransform pos1 = PxTransform(PxVec3(10, 0, 0));// , PxQuat(PxHalfPi, PxVec3(1.0f, 0.0f, 0.0f)));
+	createRAWMeshFromObjMesh("Staircase.obj", pos1, 102, data1);  
 	dataPos.push_back(pos1);
     
 	PxTransform pos2 = PxTransform(PxVec3(0, 0, -10));
@@ -285,27 +285,32 @@ PxRigidStatic* SampleHelloWorld::buildTest()
 	if (!triMesh)
 		fatalError("creating the triangle mesh failed");
 
-    //Gli attori dinamici non supportano le triangle mesh. E' necessario utilizzare le convexMesh
-    PxConvexMesh *conMesh = PxToolkit::createConvexMesh(getPhysics(), getCooking(), data1.mVerts, data1.mNbVerts, PxConvexFlag::eCOMPUTE_CONVEX);
-    if (!conMesh)
+	PxTriangleMesh* triMesh1 = generateTriMesh(data1.mNbVerts, data1.mNbFaces, data1.mVerts, data1.mIndices);
+	if (!triMesh1)
 		fatalError("creating the triangle mesh failed");
 
+    //Gli attori dinamici non supportano le triangle mesh. E' necessario utilizzare le convexMesh
+  //  PxConvexMesh *conMesh = PxToolkit::createConvexMesh(getPhysics(), getCooking(), data1.mVerts, data1.mNbVerts, PxConvexFlag::eCOMPUTE_CONVEX);
+  //  if (!conMesh)
+//		fatalError("creating the triangle mesh failed");
+
 	PxConvexMesh *conMesh2 = PxToolkit::createConvexMesh(getPhysics(), getCooking(), data2.mVerts, data2.mNbVerts, PxConvexFlag::eCOMPUTE_CONVEX);
-	if (!conMesh)
+	if (!conMesh2)
 		fatalError("creating the triangle mesh failed");
 
 	// Creazione attori nel punto dello spazio ricevuto in input + controllo errori
 	// Creazione shapes + controllo errori
 
 	PxTriangleMeshGeometry geom(triMesh);
-	PxConvexMeshGeometry   geom1(conMesh);
+	PxTriangleMeshGeometry geom1(triMesh1);
+//	PxConvexMeshGeometry   geom1(conMesh);
 	PxConvexMeshGeometry   geom2(conMesh2);
 
     
     
     PxShape* try_data, *try_data1, *try_data2;
 	PxRigidActor* actor = createRigidActor(getActiveScene(), getPhysics(), try_data, pos, geom, getDefaultMaterial());
-	PxRigidActor* actordyn = createRigidActor(getActiveScene(), getPhysics(), try_data1, pos1, geom1, getDefaultMaterial());
+	PxRigidActor* staircase = createRigidActor(getActiveScene(), getPhysics(), try_data1, pos1, geom1, getDefaultMaterial());
 	PxRigidDynamic* jointTest = createDynamicActor(getActiveScene(), getPhysics(), try_data2, pos2, geom2, getDefaultMaterial());
 	//Posizione rispetto al quale l'oggetto è vincolato a muoversi
 	//NOTA: La scimmia nera è posizionata sopra l'origine come riferimento
@@ -405,8 +410,8 @@ void SampleHelloWorld::onInit()
 	buildTest();
 
 	//Setting application
-	mApplication.setMouseCursorHiding(true);
-	mApplication.setMouseCursorRecentering(true);
+	//mApplication.setMouseCursorHiding(true);
+	//mApplication.setMouseCursorRecentering(true);
     
 	//mCameraController.init(PxVec3(0.0f, 10.0f, 0.0f), PxVec3(0.0f, 0.0f, 0.0f));
 	//mCameraController.setMouseSensitivity(0.5f);

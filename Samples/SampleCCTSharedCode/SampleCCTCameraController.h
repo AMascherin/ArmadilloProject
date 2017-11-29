@@ -104,4 +104,8 @@ class SampleCCTCameraController : public CameraController
 						PxReal						mGravity;
 
 						bool						mLinkCameraToPhysics;
+
+						float height;			//Altezza delle telecamera da terra
+						float cameraDist;		//Distanza della camera dall'oggetto
+						bool mHeightUp, mHeightDown;
 };

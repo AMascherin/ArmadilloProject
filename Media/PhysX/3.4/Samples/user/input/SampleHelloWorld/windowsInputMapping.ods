@@ -6,11 +6,11 @@ InputMapping
 		}
 	UserInputCS
 		{
-		7411927;
+		7412021;
 		}
 	InputEventCS
 		{
-		3475096;
+		3606283;
 		}
 	Map
 		{
@@ -94,18 +94,18 @@ InputMapping
 		}
 	Map
 		{
-		GAMEPAD_RIGHT_SHOULDER_TOP;
-		CAMERA_CONTROLLER_INCREASE;
-		}
-	Map
-		{
 		KEY_SUBTRACT;
 		CAMERA_CONTROLLER_DECREASE;
 		}
 	Map
 		{
-		GAMEPAD_LEFT_SHOULDER_TOP;
-		CAMERA_CONTROLLER_DECREASE;
+		GAMEPAD_RIGHT_SHOULDER_BOT;
+		TEST;
+		}
+	Map
+		{
+		GAMEPAD_LEFT_SHOULDER_BOT;
+		MYINPUT;
 		}
 	Map
 		{
@@ -321,5 +321,15 @@ InputMapping
 		{
 		KEY_9;
 		PROFILE_ONLY_PVD;
+		}
+	Map
+		{
+		GAMEPAD_RIGHT_SHOULDER_BOT;
+		CAMERA_DISTANCE_INCREASE;
+		}
+	Map
+		{
+		GAMEPAD_LEFT_SHOULDER_BOT;
+		CAMERA_DISTANCE_DECREASE;
 		}
 	}

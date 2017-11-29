@@ -121,7 +121,7 @@ void ControlledActor::synCamera(Camera camera, const PxVec3 velocity){
     const PxExtendedVec3& newPos = mController->getPosition();
     
     // Calcolo della rotazione dell'oggeto
-    PxVec3 testCross = PxVec3(-velocity.z, 0, velocity.x);
+    PxVec3 testCross = PxVec3(-velocity.z, 0, velocity.x);  //Prodotto vettoriale fra il vettore velocità e l'asse verticale
     testCross.normalize();
 
     // Posizione + rotazione oggetto se non si muove (rimane stato precedente)
