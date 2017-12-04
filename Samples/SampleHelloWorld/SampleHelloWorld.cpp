@@ -84,7 +84,7 @@ static const float gScaleFactor = 1.0f;
 static float gStandingSize = 1.0f * gScaleFactor;
 static const float gCrouchingSize = 0.25f * gScaleFactor;
 static float gControllerRadius = 0.5f * gScaleFactor;
-
+extern const char* gDynamic;
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -281,18 +281,18 @@ PxRigidStatic* SampleHelloWorld::buildTest()
 	dataPos.push_back(pos2);
 
 	// Creazione mesh triangolari a partire dalle RAWMesh ottenute precedentemente + controllo errori
-	PxTriangleMesh* triMesh = generateTriMesh(data.mNbVerts, data.mNbFaces, data.mVerts, data.mIndices);
+	/*PxTriangleMesh* triMesh = generateTriMesh(data.mNbVerts, data.mNbFaces, data.mVerts, data.mIndices);
 	if (!triMesh)
 		fatalError("creating the triangle mesh failed");
-
+        */
 	PxTriangleMesh* triMesh1 = generateTriMesh(data1.mNbVerts, data1.mNbFaces, data1.mVerts, data1.mIndices);
 	if (!triMesh1)
 		fatalError("creating the triangle mesh failed");
 
     //Gli attori dinamici non supportano le triangle mesh. E' necessario utilizzare le convexMesh
-  //  PxConvexMesh *conMesh = PxToolkit::createConvexMesh(getPhysics(), getCooking(), data1.mVerts, data1.mNbVerts, PxConvexFlag::eCOMPUTE_CONVEX);
-  //  if (!conMesh)
-//		fatalError("creating the triangle mesh failed");
+    PxConvexMesh *conMesh = PxToolkit::createConvexMesh(getPhysics(), getCooking(), data.mVerts, data.mNbVerts, PxConvexFlag::eCOMPUTE_CONVEX);
+    if (!conMesh)
+		fatalError("creating the triangle mesh failed");
 
 	PxConvexMesh *conMesh2 = PxToolkit::createConvexMesh(getPhysics(), getCooking(), data2.mVerts, data2.mNbVerts, PxConvexFlag::eCOMPUTE_CONVEX);
 	if (!conMesh2)
@@ -301,15 +301,17 @@ PxRigidStatic* SampleHelloWorld::buildTest()
 	// Creazione attori nel punto dello spazio ricevuto in input + controllo errori
 	// Creazione shapes + controllo errori
 
-	PxTriangleMeshGeometry geom(triMesh);
+	//PxTriangleMeshGeometry geom(triMesh);
 	PxTriangleMeshGeometry geom1(triMesh1);
-//	PxConvexMeshGeometry   geom1(conMesh);
+	PxConvexMeshGeometry   geom(conMesh);
 	PxConvexMeshGeometry   geom2(conMesh2);
 
     
     
     PxShape* try_data, *try_data1, *try_data2;
-	PxRigidActor* actor = createRigidActor(getActiveScene(), getPhysics(), try_data, pos, geom, getDefaultMaterial());
+	//PxRigidActor* actor = createRigidActor(getActiveScene(), getPhysics(), try_data, pos, geom, getDefaultMaterial());
+    PxRigidDynamic* actor = createDynamicActor(getActiveScene(), getPhysics(), try_data, pos, geom, getDefaultMaterial());
+
 	PxRigidActor* staircase = createRigidActor(getActiveScene(), getPhysics(), try_data1, pos1, geom1, getDefaultMaterial());
 	PxRigidDynamic* jointTest = createDynamicActor(getActiveScene(), getPhysics(), try_data2, pos2, geom2, getDefaultMaterial());
 	//Posizione rispetto al quale l'oggetto è vincolato a muoversi
@@ -445,11 +447,13 @@ void SampleHelloWorld::onInit()
         desc.mRadius = 0.5f;// gControllerRadius; // IMPORTANTE NON MODIFICARE SE NON IN RELAZIONE ALLA MESH
         desc.mHeight = 0.01f; //gStandingSize;    // IMPORTANTE NON MODIFICARE SE NON IN RELAZIONE ALLA MESH
         desc.mCrouchHeight = gCrouchingSize;
-        //desc.mReportCallback = this;
+        desc.mReportCallback = this;
+        desc.mBehaviorCallback = this;
 	}
 	{
 
 		mActor = SAMPLE_NEW(ControlledActor)(*this);
+       
         mActor->init2(desc, mControllerManager, data);
 
         // Lasciata in caso di controllo
@@ -477,7 +481,7 @@ void SampleHelloWorld::onInit()
 	mCCTCamera = SAMPLE_NEW(SampleCCTCameraController)(*this);
 	mCCTCamera->setControlled(&mActor, 0, 1);
 	//	mCCTCamera->setFilterData();
-	//mCCTCamera->setFilterCallback(this);
+	mCCTCamera->setFilterCallback(this);
 	mCCTCamera->setGravity(-20.0f);
 
 	setCameraController(mCCTCamera);
@@ -567,3 +571,42 @@ PxU32 SampleHelloWorld::getDebugObjectTypes() const
 }
 
 
+
+
+extern const char* gDynamic;
+
+void SampleHelloWorld::onShapeHit(const PxControllerShapeHit& hit)
+{
+    defaultCCTInteraction(hit);
+}
+
+
+PxControllerBehaviorFlags SampleHelloWorld::getBehaviorFlags(const PxShape& shape, const PxActor& actor)
+{
+    return PxControllerBehaviorFlags(0);
+}
+
+PxControllerBehaviorFlags SampleHelloWorld::getBehaviorFlags(const PxController&)
+{
+    return PxControllerBehaviorFlags(0);
+}
+
+PxControllerBehaviorFlags SampleHelloWorld::getBehaviorFlags(const PxObstacle&)
+{
+    return PxControllerBehaviorFlag::eCCT_CAN_RIDE_ON_OBJECT | PxControllerBehaviorFlag::eCCT_SLIDE;
+}
+
+PxQueryHitType::Enum SampleHelloWorld::preFilter(const PxFilterData& filterData, const PxShape* shape, const PxRigidActor* actor, PxHitFlags& queryFlags)
+{
+    PX_UNUSED(actor);
+    const char* actorName = shape->getActor()->getName();
+    if (actorName == gDynamic)
+        return PxQueryHitType::eNONE;
+
+    return PxQueryHitType::eBLOCK;
+}
+
+PxQueryHitType::Enum SampleHelloWorld::postFilter(const PxFilterData& filterData, const PxQueryHit& hit)
+{
+    return PxQueryHitType::eBLOCK;
+}

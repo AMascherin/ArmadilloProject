@@ -35,8 +35,11 @@
 #include "SampleCCTCameraController.h"
 #include "SampleCCTActor.h"
 #include "SampleCCTJump.h"
+#include "characterkinematic/PxController.h"
+#include "characterkinematic/PxControllerBehavior.h"
 
-	class SampleHelloWorld : public PhysXSample
+	class SampleHelloWorld : public PhysXSample,
+         public PxUserControllerHitReport, public PxControllerBehaviorCallback, public PxQueryFilterCallback
 	{
 		public:
 												SampleHelloWorld(PhysXSampleApplication& app);
@@ -56,6 +59,27 @@
 		virtual	void							descriptionRender(PxU32 x, PxU32 y, PxU8 textAlpha);
 		virtual PxU32							getDebugObjectTypes() const;
 
+        // Implements PxUserControllerHitReport
+        virtual void							onShapeHit(const PxControllerShapeHit& hit);
+        virtual void							onControllerHit(const PxControllersHit& hit) {}
+        virtual void							onObstacleHit(const PxControllerObstacleHit& hit) {}
+
+        ///////////////////////////////////////////////////////////////////////////////
+
+        // Implements PxControllerBehaviorCallback
+        virtual PxControllerBehaviorFlags		getBehaviorFlags(const PxShape& shape, const PxActor& actor);
+        virtual PxControllerBehaviorFlags		getBehaviorFlags(const PxController& controller);
+        virtual PxControllerBehaviorFlags		getBehaviorFlags(const PxObstacle& obstacle);
+
+        ///////////////////////////////////////////////////////////////////////////////
+
+        // Implements PxQueryFilterCallback
+        virtual	PxQueryHitType::Enum		preFilter(const PxFilterData& filterData, const PxShape* shape, const PxRigidActor* actor, PxHitFlags& queryFlags);
+        virtual	PxQueryHitType::Enum		postFilter(const PxFilterData& filterData, const PxQueryHit& hit);
+
+        ///////////////////////////////////////////////////////////////////////////////
+
+
 		//Camera management
 		SampleCCTCameraController*		mCCTCamera;
 		ControlledActor*				mActor;
@@ -69,6 +93,8 @@
 		PxReal                          mCCTTimeStep;
 	//	SampleCharacterClothJump		mJump;
 
+
+  
 		// Funzioni inserite per test import/rendering
 		RAWMesh * createRAWMeshFromObjMesh(const char * inObjFileName, const PxTransform & inPos, PxU32 inMaterialID, RAWMesh & outRawMesh);
 		PxTriangleMesh * generateTriMesh(PxU32 vertCount, PxU32 triCount, const PxVec3 * vers, const PxU32 * indices);
