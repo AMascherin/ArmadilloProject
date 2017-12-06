@@ -240,3 +240,7 @@ ModelManifest.xml
 
 # FAKE - F# Make
 .fake/
+/Media/PhysX/3.4/Samples/Pala.mtl
+/Media/PhysX/3.4/Samples/Fence.mtl
+/Media/PhysX/3.4/Samples/Column.mtl
+/Media/PhysX/3.4/Samples/Cilinder.mtl

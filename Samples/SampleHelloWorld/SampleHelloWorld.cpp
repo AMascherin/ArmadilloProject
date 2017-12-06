@@ -68,24 +68,20 @@ static const float gCrouchingSize = 0.25f * gScaleFactor;
 static const float gControllerRadius = 0.5f * gScaleFactor;*/
 
 #define CONTACT_OFFSET			0.01f
-//	#define CONTACT_OFFSET			0.1f
-//	#define STEP_OFFSET				0.01f
-#define STEP_OFFSET				0.05f
-//	#define STEP_OFFSET				0.1f
-//	#define STEP_OFFSET				0.2f
 
-//	#define SLOPE_LIMIT				0.8f
+#define STEP_OFFSET				0.05f
+
 #define SLOPE_LIMIT				0.0f
-//	#define INVISIBLE_WALLS_HEIGHT	6.0f
+
 #define INVISIBLE_WALLS_HEIGHT	0.0f
-//	#define MAX_JUMP_HEIGHT			4.0f
+
 #define MAX_JUMP_HEIGHT			0.0f
 static const float gScaleFactor = 1.0f;
 static float gStandingSize = 1.0f * gScaleFactor;
 static const float gCrouchingSize = 0.25f * gScaleFactor;
 static float gControllerRadius = 0.5f * gScaleFactor;
-extern const char* gDynamic;
 
+const char* gDynamic = "Dynamic";
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -131,10 +127,6 @@ void SampleHelloWorld::onTickPostRender(float dtime)
 void SampleHelloWorld::customizeSceneDesc(PxSceneDesc& sceneDesc)
 {
 	sceneDesc.flags |= PxSceneFlag::eREQUIRE_RW_LOCK;
-}
-
-void SampleHelloWorld::newMesh(const RAWMesh& data)
-{
 }
 
 //Metodo per creare le mesh da un file .obj
@@ -221,7 +213,7 @@ PxRigidActor* SampleHelloWorld::createRigidActor(PxScene& scene, PxPhysics& phys
 		return NULL;
 	}
 	scene.addActor(*_actor);
-
+	dataShape.push_back(shape);
 	return _actor;
 }
 
@@ -238,13 +230,8 @@ PxRigidDynamic* SampleHelloWorld::createDynamicActor
 		dyn->release();
 		return NULL;
 	}
-    // Commento per ora, lascio le configurazioni di default
-	/*dyn->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, true);
-	dyn->setLinearVelocity(PxVec3(0.1, 0.0, 0.0), true);
-	dyn->setMass(0.03f);
-	dyn->setMassSpaceInertiaTensor(PxVec3(0.f, 0.f, 10.f));*/
 	scene.addActor(*dyn);
-
+	dataShape.push_back(shape);
 	return dyn;
 }
 
@@ -264,12 +251,12 @@ PxJoint* createDampedD6(PxRigidActor* a0, const PxTransform& t0, PxRigidActor* a
 
 
 
-//Metodo che crea le 2 mesh triangolari e salva i dati in maniera globale
-PxRigidStatic* SampleHelloWorld::buildTest()
-{
-	// Creazione mesh con relativa posizione iniziale
-    PxTransform pos = PxTransform(PxVec3(0, 0, 0));//, PxQuat(-PxHalfPi, PxVec3(1.0f, 0.0f, 0.0f)));// PxQuat(-0.0017525638f, -0.24773766f, 0.00040674198f, -0.96882552f));
-	createRAWMeshFromObjMesh("sfera_l2.obj", pos, 101, data);    
+//Vecchio metodo per la generazione della scena. Lascio come riferimento (da rimuovere in futuri commit)
+//void SampleHelloWorld::buildTest()
+/*{
+
+	PxTransform pos = PxTransform(PxVec3(0, 0, 0));//, PxQuat(-PxHalfPi, PxVec3(1.0f, 0.0f, 0.0f)));// PxQuat(-0.0017525638f, -0.24773766f, 0.00040674198f, -0.96882552f));
+	createRAWMeshFromObjMesh("sfera_l2.obj", pos, 101, data);
 	dataPos.push_back(pos);
 
     PxTransform pos1 = PxTransform(PxVec3(10, 0, 0));// , PxQuat(PxHalfPi, PxVec3(1.0f, 0.0f, 0.0f)));
@@ -277,16 +264,24 @@ PxRigidStatic* SampleHelloWorld::buildTest()
 	dataPos.push_back(pos1);
     
 	PxTransform pos2 = PxTransform(PxVec3(0, 0, -10));
-	createRAWMeshFromObjMesh("JointTest2.obj", pos1, 103, data2);
+	createRAWMeshFromObjMesh("Pala.obj", pos2, 103, data2);
 	dataPos.push_back(pos2);
 
+	PxTransform pos3 = PxTransform(PxVec3(0, 0, -10));
+	createRAWMeshFromObjMesh("Cilinder.obj", pos2, 103, data3);
+	dataPos.push_back(pos2);
+	
 	// Creazione mesh triangolari a partire dalle RAWMesh ottenute precedentemente + controllo errori
-	/*PxTriangleMesh* triMesh = generateTriMesh(data.mNbVerts, data.mNbFaces, data.mVerts, data.mIndices);
-	if (!triMesh)
-		fatalError("creating the triangle mesh failed");
-        */
+	//PxTriangleMesh* triMesh = generateTriMesh(data.mNbVerts, data.mNbFaces, data.mVerts, data.mIndices);
+	//if (!triMesh)
+	//	fatalError("creating the triangle mesh failed");
+    //
 	PxTriangleMesh* triMesh1 = generateTriMesh(data1.mNbVerts, data1.mNbFaces, data1.mVerts, data1.mIndices);
 	if (!triMesh1)
+		fatalError("creating the triangle mesh failed");
+
+	PxTriangleMesh* triMesh3 = generateTriMesh(data3.mNbVerts, data3.mNbFaces, data3.mVerts, data3.mIndices);
+	if (!triMesh3)
 		fatalError("creating the triangle mesh failed");
 
     //Gli attori dinamici non supportano le triangle mesh. E' necessario utilizzare le convexMesh
@@ -300,86 +295,139 @@ PxRigidStatic* SampleHelloWorld::buildTest()
 
 	// Creazione attori nel punto dello spazio ricevuto in input + controllo errori
 	// Creazione shapes + controllo errori
-
 	//PxTriangleMeshGeometry geom(triMesh);
 	PxTriangleMeshGeometry geom1(triMesh1);
+	PxTriangleMeshGeometry geom3(triMesh3);
 	PxConvexMeshGeometry   geom(conMesh);
-	PxConvexMeshGeometry   geom2(conMesh2);
-
+	PxConvexMeshGeometry   geom2(conMesh2);  
+	
     
-    
-    PxShape* try_data, *try_data1, *try_data2;
-	//PxRigidActor* actor = createRigidActor(getActiveScene(), getPhysics(), try_data, pos, geom, getDefaultMaterial());
-    PxRigidDynamic* actor = createDynamicActor(getActiveScene(), getPhysics(), try_data, pos, geom, getDefaultMaterial());
+	PxShape* try_data, *try_data1, *try_data2, *try_data3;
+	
+    PxRigidDynamic* actor =		createDynamicActor	(getActiveScene(), getPhysics(), try_data,	pos,  geom,  getDefaultMaterial());
+	PxRigidActor* staircase =	createRigidActor	(getActiveScene(), getPhysics(), try_data1, pos1, geom1, getDefaultMaterial());
+	PxRigidDynamic* jointTest = createDynamicActor	(getActiveScene(), getPhysics(), try_data2, pos2, geom2, getDefaultMaterial());
+	PxRigidActor* column =		createRigidActor	(getActiveScene(), getPhysics(), try_data3, pos3, geom3, getDefaultMaterial());
 
-	PxRigidActor* staircase = createRigidActor(getActiveScene(), getPhysics(), try_data1, pos1, geom1, getDefaultMaterial());
-	PxRigidDynamic* jointTest = createDynamicActor(getActiveScene(), getPhysics(), try_data2, pos2, geom2, getDefaultMaterial());
+	//Creazione dei Joint
+
 	//Posizione rispetto al quale l'oggetto è vincolato a muoversi
-	//NOTA: La scimmia nera è posizionata sopra l'origine come riferimento
-
 	// PxTransform pos2 = PxTransform(PxVec3(0, 0, -10));
-	PxTransform jointpos = PxTransform(PxVec3(0, 0, 2));
-
+	PxTransform jointpos = PxTransform(PxVec3(0, 0,0.4f));
+	jointTest->setMass(2.f);
+	jointTest->setMassSpaceInertiaTensor(PxVec3(1.f, 1.f, 1.f));
     //TEST JOINT:
 	(*createDampedD6)(NULL, pos2, jointTest, jointpos); //-->in questo caso l'oggetto è posizionato nel punto pos2 e ruota attorno al proprio asse y
 	//(*createDampedD6)(NULL, pos2, jointTest, pos2);    //-->in questo caso l'oggetto è posizionato nell'origine e ruota attorno a pos2
 	//(*createDampedD6)(NULL, jointpos, jointTest, PxTransform(PxVec3(0,0,10)));  //-->oggetto posizionato in pos2 e ruota attorno all'origine
 	//(*createDampedD6)(NULL, jointpos, jointTest, pos2);  //-->oggetto posizionato in -pos2 e ruota attorno all'origine
 	// (*createDampedD6)(NULL, jointpos, jointTest, jointpos); //-->oggetto posizionato nell'origine e ruota attorno al proprio asse y
-    
-	dataShape.push_back(try_data);
-	dataShape.push_back(try_data1);
-	dataShape.push_back(try_data2);
 
 	//Creazione delle RenderMesh
-	RenderBaseActor* renderMesh = createRenderMeshFromRawMesh(data);
-	dataRender.push_back(renderMesh);
-	RenderBaseActor* renderMesh1 = createRenderMeshFromRawMesh(data1);
-	dataRender.push_back(renderMesh1);
-	RenderBaseActor* renderMesh2 = createRenderMeshFromRawMesh(data2);
-	dataRender.push_back(renderMesh2);	
-	return NULL;
+	dataRender.push_back(createRenderMeshFromRawMesh(data));
+	dataRender.push_back(createRenderMeshFromRawMesh(data1));
+	dataRender.push_back(createRenderMeshFromRawMesh(data2));
+	dataRender.push_back(createRenderMeshFromRawMesh(data3));
+	return;
+}
+*/
+
+void SampleHelloWorld::buildScene() {
+
+	PrepareActor(PxTransform(PxVec3(0, 0, 0)),  101, "sfera_l2.obj", false);
+	PrepareActor(PxTransform(PxVec3(10, 0, 0)), 102, "Staircase.obj", true);
+	PrepareActor(PxTransform(PxVec3(0, 0, -10)), 103, "Cilinder.obj", true );
+	PrepareActor(PxTransform(PxVec3(0, 0, -10)),103,"Pala.obj",false, PxTransform(PxVec3(0, 0, 0.4f)),2.f, PxVec3(1.f, 1.f, 1.f));
+
+}
+
+void SampleHelloWorld::PrepareActor(const PxTransform & pos, int MaterialID, const char * inObjFileName, bool isRigid)
+{
+	//Import della mesh da disco
+	RAWMesh newMesh;
+	createRAWMeshFromObjMesh(inObjFileName, pos, MaterialID, newMesh);
+	dataMesh.insert(std::make_pair(inObjFileName, newMesh));
+	dataPos.push_back(pos);
+
+	if (isRigid) //I rigid actor sono realizzati a partire dal calcolo di triangle Mesh
+	{
+
+		PxTriangleMesh* triMesh = generateTriMesh(newMesh.mNbVerts, newMesh.mNbFaces, newMesh.mVerts, newMesh.mIndices);
+		if (!triMesh)
+			fatalError("creating the triangle mesh failed");
+		PxTriangleMeshGeometry triGeom(triMesh);
+		PxShape* newShape;
+
+		//Creazione dell'attore rigido per la scena Physx
+		PxRigidActor* rigidActor = createRigidActor(getActiveScene(), getPhysics(), newShape, pos, triGeom, getDefaultMaterial());
+
+		//Creazione dell'attore da renderizzare
+		dataRender.push_back(createRenderMeshFromRawMesh(newMesh));
+	}
+	else //Gli attori dinamici necessitano invece di Convex Mesh
+	{
+		PxConvexMesh *conMesh = PxToolkit::createConvexMesh(getPhysics(), getCooking(), newMesh.mVerts, newMesh.mNbVerts, PxConvexFlag::eCOMPUTE_CONVEX);
+		if (!conMesh)
+			fatalError("creating the triangle mesh failed");
+		PxConvexMeshGeometry   conGeom(conMesh);
+		PxShape* newShape;
+
+		//Creazione dell'attore dinamico per la scena Physx
+		PxRigidDynamic* dynActor = createDynamicActor(getActiveScene(), getPhysics(), newShape, pos, conGeom, getDefaultMaterial());
+
+		//Creazione dell'attore da renderizzare
+		dataRender.push_back(createRenderMeshFromRawMesh(newMesh));
+	}
 }
 
 
-static void gValue(Console* console, const char* text, void* userData)
-{
-	if (!text)
-	{
-		console->out("Usage: value <float>");
-		return;
-	}
 
-	const float val = (float)::atof(text);
-	shdfnd::printFormatted("value: %f\n", val);
+//TODO: Controllare la presenza di tutti i parametri con assert
+void SampleHelloWorld::PrepareActor(const PxTransform & pos, int MaterialID, const char * inObjFileName, 
+									bool isRigid, const PxTransform & jointpos, float mass, const PxVec3 & tensor)
+{
+	//Import della mesh da disco
+	RAWMesh newMesh;
+	createRAWMeshFromObjMesh(inObjFileName, pos, MaterialID, newMesh);
+	dataMesh.insert(std::make_pair(inObjFileName, newMesh));
+	dataPos.push_back(pos);
+
+	if (isRigid) //I rigid actor sono realizzati a partire dal calcolo di triangle Mesh
+	{
+		PrepareActor(pos, MaterialID, inObjFileName, true);
+	}
+	else //Gli attori dinamici necessitano invece di Convex Mesh
+	{
+		PxConvexMesh *conMesh = PxToolkit::createConvexMesh(getPhysics(), getCooking(), newMesh.mVerts, newMesh.mNbVerts, PxConvexFlag::eCOMPUTE_CONVEX);
+		if (!conMesh)
+			fatalError("creating the triangle mesh failed");
+		PxConvexMeshGeometry   conGeom(conMesh);
+		PxShape* newShape;
+
+		//Creazione dell'attore dinamico per la scena Physx
+		PxRigidDynamic* dynActor = createDynamicActor(getActiveScene(), getPhysics(), newShape, pos, conGeom, getDefaultMaterial());
+
+
+		//Creazione del Joint
+		(*createDampedD6)(NULL, pos, dynActor, jointpos);
+		dynActor->setMass(mass);
+		dynActor->setMassSpaceInertiaTensor(tensor);
+
+
+		//Creazione dell'attore da renderizzare
+		dataRender.push_back(createRenderMeshFromRawMesh(newMesh));
+	}
 }
 
-static void gExport(Console* console, const char* text, void* userData)
-{
-	if (!text)
-	{
-		console->out("Usage: export <filename>");
-		return;
-	}
-}
+//TODO: Implementare questo overload
+void SampleHelloWorld::PrepareActor(const PxTransform & pos, std::vector<int> MaterialID, std::vector<const char *> inObjFileNames,
+	bool isRigid, const PxTransform & jointpos, float mass, const PxVec3 & tensor) {
 
-static void gImport(Console* console, const char* text, void* userData)
-{
-	if (!text)
-	{
-		console->out("Usage: import <filename>");
-		return;
-	}
+
 }
 
 void SampleHelloWorld::onInit()
 {
-	if (getConsole())
-	{
-		getConsole()->addCmd("value", gValue);
-		getConsole()->addCmd("export", gExport);
-		getConsole()->addCmd("import", gImport);
-	}
 
 	PhysXSample::onInit();
     PxSceneWriteLock scopedLock(*mScene);
@@ -389,52 +437,32 @@ void SampleHelloWorld::onInit()
 	{
 		RAWTexture Texturedata;
 		Texturedata.mName = "DiffuseMap.bmp";
-		RenderTexture* tryTexture = createRenderTextureFromRawTexture(Texturedata);
-
-		tryMaterial = SAMPLE_NEW(RenderMaterial)(*getRenderer(), PxVec3(1.0f, 1.0f, 1.0f), 1.0f, false, 101, tryTexture);
-		mRenderMaterials.push_back(tryMaterial);
+		RenderTexture* Texture = createRenderTextureFromRawTexture(Texturedata);
+		mRenderMaterials.push_back(SAMPLE_NEW(RenderMaterial)(*getRenderer(), PxVec3(1.0f, 1.0f, 1.0f), 1.0f, false, 101, Texture));
 
 		RAWTexture Texturedata1;
 		Texturedata1.mName = "nvidia.bmp";
-		RenderTexture* tryTexture1 = createRenderTextureFromRawTexture(Texturedata1);
-
-		tryMaterial1 = SAMPLE_NEW(RenderMaterial)(*getRenderer(), PxVec3(1.0f, 1.0f, 1.0f), 1.0f, false, 102, tryTexture1);
-		mRenderMaterials.push_back(tryMaterial1);
+		RenderTexture* Texture1 = createRenderTextureFromRawTexture(Texturedata1);
+		mRenderMaterials.push_back(SAMPLE_NEW(RenderMaterial)(*getRenderer(), PxVec3(1.0f, 1.0f, 1.0f), 1.0f, false, 102, Texture1));
 
 		RAWTexture Texturedata2;
 		Texturedata2.mName = "Wood_Tileable.jpg";
-		RenderTexture* tryTexture2 = createRenderTextureFromRawTexture(Texturedata2);
-
-		tryMaterial2 = SAMPLE_NEW(RenderMaterial)(*getRenderer(), PxVec3(1.0f, 1.0f, 1.0f), 1.0f, false, 103, tryTexture2);
-		mRenderMaterials.push_back(tryMaterial2);
+		RenderTexture* Texture2 = createRenderTextureFromRawTexture(Texturedata2);
+		mRenderMaterials.push_back(SAMPLE_NEW(RenderMaterial)(*getRenderer(), PxVec3(1.0f, 1.0f, 1.0f), 1.0f, false, 103, Texture2));
 	}
+
+
 	// Creazione mesh
-	buildTest();
+	buildScene();
 
 	//Setting application
 	//mApplication.setMouseCursorHiding(true);
 	//mApplication.setMouseCursorRecentering(true);
     
-	//mCameraController.init(PxVec3(0.0f, 10.0f, 0.0f), PxVec3(0.0f, 0.0f, 0.0f));
-	//mCameraController.setMouseSensitivity(0.5f);
-
 	//-----------------Codice preso da SampleBridge----------------
 	mControllerManager = PxCreateControllerManager(getActiveScene());
 	ControlledActorDesc desc;
 	{
-        // Caso controllore sia una capsula
-		/*desc.mType = PxControllerShapeType::eCAPSULE;
-        desc.mPosition = mControllerInitialPosition;
-		desc.mSlopeLimit = SLOPE_LIMIT;
-		desc.mContactOffset = CONTACT_OFFSET;
-		desc.mStepOffset = STEP_OFFSET;
-		desc.mInvisibleWallHeight = INVISIBLE_WALLS_HEIGHT;
-		desc.mMaxJumpHeight = MAX_JUMP_HEIGHT;
-		desc.mRadius = gControllerRadius;
-        desc.mHeight = gStandingSize;
-		desc.mCrouchHeight = gCrouchingSize;
-		//	desc.mReportCallback = this;
-		//	desc.mBehaviorCallback = this;*/
 
         // Caso controllore sia un cubo
         desc.mType = PxControllerShapeType::eBOX;
@@ -454,7 +482,7 @@ void SampleHelloWorld::onInit()
 
 		mActor = SAMPLE_NEW(ControlledActor)(*this);
        
-        mActor->init2(desc, mControllerManager, data);
+        mActor->init2(desc, mControllerManager, dataMesh["sfera_l2.obj"]);
 
         // Lasciata in caso di controllo
         //mActor->init(desc, mControllerManager);// , data2);
@@ -464,18 +492,6 @@ void SampleHelloWorld::onInit()
             actor0->setRenderMaterial(mRenderMaterials[0]);
             mRenderActors.push_back(actor0);
         }
-		
-        // Codice vecchio
-        //PxMeshScale* sc = new PxMeshScale(PxVec3(1.2f, 1.2f, 1.2f));
-		//actor0->setMeshScale(*sc);
-        //RenderBaseActor* actor1 = mActor->getRenderActorCrouching();
-		/*if (actor0) {
-            //actor0->setTransform(PxTransform(PxVec3(0, 0, 0), PxQuat(2 * PxHalfPi, PxVec3(1.0f, 0.0f, 0.0f))));
-			actor0->setRenderMaterial(mRenderMaterials[0]);
-			mRenderActors.push_back(actor0);
-		}*/
-//		if (actor1)
-//			mRenderActors.push_back(actor1);
 	}
     
 	mCCTCamera = SAMPLE_NEW(SampleCCTCameraController)(*this);
@@ -570,10 +586,6 @@ PxU32 SampleHelloWorld::getDebugObjectTypes() const
 	return DEBUG_OBJECT_BOX | DEBUG_OBJECT_SPHERE | DEBUG_OBJECT_CAPSULE | DEBUG_OBJECT_CONVEX;
 }
 
-
-
-
-extern const char* gDynamic;
 
 void SampleHelloWorld::onShapeHit(const PxControllerShapeHit& hit)
 {

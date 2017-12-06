@@ -48,8 +48,6 @@
 		virtual	void							onTickPreRender(float dtime);
 		virtual	void							onTickPostRender(float dtime);
 		virtual	void							customizeSceneDesc(PxSceneDesc&);
-
-		virtual	void							newMesh(const RAWMesh&);
 		virtual	void							onInit();
         void onShutdown();
         virtual	void						    onInit(bool restart) { onInit(); }
@@ -84,8 +82,6 @@
 		SampleCCTCameraController*		mCCTCamera;
 		ControlledActor*				mActor;
 		PxControllerManager*			mControllerManager;
-	//	PxExtendedVec3					mControllerInitialPosition;
-	//	PxCapsuleController*			mController;
 		PxExtendedVec3							mControllerInitialPosition;
 		bool                            mCCTActive;
 		PxVec3                          mCCTDisplacement;
@@ -93,21 +89,22 @@
 		PxReal                          mCCTTimeStep;
 	//	SampleCharacterClothJump		mJump;
 
-
   
 		// Funzioni inserite per test import/rendering
 		RAWMesh * createRAWMeshFromObjMesh(const char * inObjFileName, const PxTransform & inPos, PxU32 inMaterialID, RAWMesh & outRawMesh);
 		PxTriangleMesh * generateTriMesh(PxU32 vertCount, PxU32 triCount, const PxVec3 * vers, const PxU32 * indices);
 		PxRigidActor * createRigidActor		(PxScene & scene, PxPhysics & physics, PxShape* & shape, const PxTransform & pose, const PxGeometry & geometry, PxMaterial & material);
 		PxRigidDynamic * createDynamicActor	(PxScene & scene, PxPhysics & physics, PxShape *& shape, const PxTransform & pose, const PxGeometry & geometry, PxMaterial & material);
-		PxRigidStatic * buildTest();
+		//void buildTest();
+		void buildScene();
+		void PrepareActor(const PxTransform& pos, int MaterialID, const char* inObjFileName, bool isRigid);
+		void PrepareActor(const PxTransform& pos,int MaterialID, const char* inObjFileName, bool isRigid, const PxTransform& jointpos, float mass, const PxVec3& tensor);
 
-		// Dati di materiali e mesh salvati globalmente
-		RenderMaterial*                 tryMaterial, *tryMaterial1, *tryMaterial2;
+		void PrepareActor(const PxTransform & pos, std::vector<int> MaterialID, std::vector<const char*> inObjFileNames, bool isRigid, const PxTransform & jointpos, float mass, const PxVec3 & tensor);
 
-		RAWMesh data, data1, data2;
-
-
+		// Dati di materiali e mesh salvati globalmente in vettori e mappe
+		
+		std::map<const char*, RAWMesh> dataMesh;
 		std::vector<PxShape*> dataShape;
 		std::vector<PxTransform> dataPos; 
 		std::vector<RenderBaseActor*> dataRender;
