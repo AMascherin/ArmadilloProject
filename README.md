@@ -6,3 +6,4 @@ README
 * Per poter compilare il programma in altre versioni (debug, profile, release) è necessario scaricare i sorgenti di PhysX dal link sopra inserito e compilare la libreria base nella versione desiderata
 * Il gioco per il suo funzionamento necessita di Microsoft™ DirectX End-User Runtime
 * Si consiglia l’utilizzo di un Controller XBOX per avere una migliore esperienza di gioco, in quanto il gioco è stato progettato principalmente per utilizzare il suddetto input. Mouse e tastiera sono supportati ma sono fortemente sconsigliati
+* Sono inoltre presenti 3 render della scena Blender da cui sono stati importati i modelli
